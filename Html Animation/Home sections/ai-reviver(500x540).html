@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Reviver</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  :root {
+    --ink:#0a0a10; --mid:#4b5563; --soft:#9ca3af; --border:#e5e7eb;
+    --surface:#f9fafb; --accent:#FFA925; --accent-light:#FEF2D7;
+    --accent-mid:#FCDF9C; --green:#059669; --green-light:#d1fae5;
+    --indigo:#3730a3; --indigo-light:#eef2ff;
+  }
+  body { font-family:'DM Sans',sans-serif; background:#fff; width:500px; height:540px; overflow:hidden; }
+  .scene { padding:20px 20px 14px; display:flex; flex-direction:column; height:540px; }
+
+  .search-label { font-size:13px; font-weight:600; color:var(--ink); margin-bottom:9px; }
+
+  /* Connect panel */
+  .connect-panel {
+    border:1px solid var(--border);
+    box-shadow:none;
+    border-radius:10px; padding:11px 14px;
+    background:var(--surface); margin-bottom:10px;
+  }
+  .ats-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:nowrap; }
+  .ats-label { font-size:10.5px; font-weight:500; color:var(--mid); flex-shrink:0; }
+  .ats-pills { display:flex; gap:5px; flex-wrap:nowrap; overflow:hidden; }
+  .ats-pill {
+    display:flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px;
+    border:1.5px solid var(--border); background:#fff; font-size:10.5px; font-weight:500;
+    color:var(--mid); white-space:nowrap; flex-shrink:0;
+  }
+  .ats-pill.selected { border-color:var(--accent); background:var(--accent-light); color:#92570a; }
+  .ats-more { font-size:10px; color:var(--soft); flex-shrink:0; }
+
+  /* Connected row — white bg, no border */
+  .connected-row {
+    display:flex; align-items:center; gap:8px;
+    background:#fff; border-radius:8px; padding:6px 0; margin-bottom:7px;
+  }
+  .bh-logo { width:20px; height:20px; object-fit:contain; flex-shrink:0; }
+  .connected-text { font-size:11.5px; font-weight:600; color:var(--green); }
+  .connected-sub { font-size:10px; color:var(--soft); margin-left:auto; }
+
+  .criteria-row { display:flex; align-items:center; gap:5px; font-size:10px; color:var(--mid); }
+
+  /* Step pills row */
+  .steps-row {
+    display:flex; flex-wrap:wrap; gap:6px;
+    margin-bottom:10px;
+  }
+  .step-pill {
+    display:flex; align-items:center; gap:5px;
+    padding:5px 11px; border-radius:20px;
+    background:var(--surface); border:1.5px solid var(--border);
+    font-size:10.5px; font-weight:500; color:var(--soft);
+    opacity:0; transform:translateY(4px);
+    transition:opacity .25s ease, transform .25s ease,
+               background .35s ease, border-color .35s ease, color .35s ease;
+  }
+  .step-pill.show { opacity:1; transform:translateY(0); }
+  .step-pill.done {
+    background:var(--accent-light); border-color:var(--accent-mid); color:#92570a;
+  }
+  .pill-check {
+    width:14px; height:14px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--border); transition:background .3s ease;
+  }
+  .step-pill.done .pill-check { background:var(--accent); }
+  .pill-check svg { display:block; }
+
+  /* Progress bar */
+  .progress-wrap { margin-bottom:10px; }
+  .progress-track { height:3px; background:var(--border); border-radius:99px; overflow:hidden; }
+  .progress-fill {
+    height:100%; width:0%;
+    background:linear-gradient(90deg,var(--accent-mid),var(--accent));
+    border-radius:99px; transition:width .35s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* Status section */
+  .status-section { visibility:hidden; flex:1; display:flex; flex-direction:column; margin-bottom:10px; }
+  .status-section.visible { visibility:visible; }
+  .section-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;
+  }
+  .section-title { font-size:11px; font-weight:600; color:var(--ink); }
+  .section-count { font-size:10.5px; font-weight:600; color:var(--indigo); }
+  .status-grid { display:grid; grid-template-columns:repeat(4,1fr); grid-template-rows:1fr 1fr; gap:5px; flex:1; }
+  .status-card {
+    border:1.5px solid var(--border); border-radius:8px; padding:8px 9px 7px;
+    background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.05);
+    opacity:0; transform:translateY(6px);
+    transition:opacity .3s ease, transform .3s ease;
+    display:flex; flex-direction:column; justify-content:space-between;
+  }
+  .status-card.show { opacity:1; transform:translateY(0); }
+  .status-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:3px; margin-bottom:3px; }
+  .status-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+  .status-right { text-align:right; }
+  .status-count { font-size:16px; font-weight:700; line-height:1; letter-spacing:-.02em; }
+  .status-pct { font-size:9px; color:var(--soft); }
+  .status-name { font-size:9.5px; font-weight:500; color:var(--mid); line-height:1.3; }
+  .status-bar-track { height:2px; background:var(--border); border-radius:2px; overflow:hidden; margin-top:5px; }
+  .status-bar-fill { height:100%; border-radius:2px; }
+
+  /* Footer */
+  .footer {
+    margin-top:auto;
+    display:flex; align-items:center; gap:10px;
+    opacity:0; transform:translateY(6px);
+    transition:opacity .4s ease, transform .4s ease;
+  }
+  .footer.show { opacity:1; transform:translateY(0); }
+  .stat-box {
+    flex:1; background:var(--surface); border:1px solid var(--border);
+    border-radius:8px; padding:8px 12px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .stat-item { display:flex; flex-direction:column; gap:1px; }
+  .stat-num { font-size:13px; font-weight:700; color:var(--ink); line-height:1.2; }
+  .stat-num.green { color:var(--green); }
+  .stat-num.accent { color:var(--accent); }
+  .stat-lbl { font-size:10px; color:var(--soft); white-space:nowrap; }
+  .stat-divider { width:1px; height:22px; background:var(--border); flex-shrink:0; }
+</style>
+</head>
+<body>
+<div class="scene">
+
+  <div class="search-label">Reactivate your database</div>
+
+  <div class="connect-panel">
+    <div class="ats-row">
+      <span class="ats-label">Connected ATS</span>
+      <div class="ats-pills">
+        <div class="ats-pill selected">
+          <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4.5" fill="#059669"/><polyline points="2.2,5 3.8,6.8 7.8,2.5" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Bullhorn
+        </div>
+        <div class="ats-pill">Vincere</div>
+        <div class="ats-pill">Ashby</div>
+        <div class="ats-pill">Greenhouse</div>
+      </div>
+      <span class="ats-more">+200 more</span>
+    </div>
+    <div class="connected-row">
+      <img class="bh-logo" src="data:image/png;base64,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Ta7d5mltutlJSZ+9K8yu9PhH6qE3vUF7vbs3S51FS3OQwndYP6Bhv0Wsq9LaWNpEALj5Drn0W1o9EKuRwM5DR5npl1WX1TrzUF8qX7lZLQUhPuU9O8swPzOHFx79PBRaQmR+/IS934nHJ+a4Rc/qKmapdryuLj3rodPSw0zAyFoaO5ERFgWdERERSnSes3aZoiygstvfVuz7Srl3i9wzkDgeAHAYBxwzzV2aQm1FVW8VWoYqGnklAdHT08bg6MfnJcePgBw79taiMjBU90Rry8DUluivt8k/ZjN5km+xgHwEN3iG5PvY4k+JVpwHGRTyCOdx1cgALAC+0u2eee8lVTSDBDURmSBo1sySblxtmA3b5ZbrK80Xgob1Z67/AAV1oak9oqhrj9Cveujse14u03C5q+NzDZwsUREXpeEREREREREREREREREREREREREREREUW1FoHTV7kdNLRmlqXc5qU7jie5Hwk+JGVKUWCemhqG6krQ4d6z09VNTO14XFp7lUVz2PVLS51svUUg+6ypiLfm5uf0WCqdl2rYfghoqj/KqP/YBX0i0cui2HyG4BbyPzdb6HSzEYxZxDuY+LLXl2zvWbedkcfKphP/NReWN8Ur4pGlsjHFrmnoQcELY7aBfmad0xU1ocBUvHsqZveR3L5cXHwC1v8yT4lU/HsNpsPkbFC4kkXN7ZcNgHerno/idViMbpZmgAGwtfPjtJ7kREWgVgREREREREREREXBAPMA+aydov16tDw623SqpsfcbISz1YctPqFjUXuOR8btZhse7JeJI2SN1XgEcDmrt0XtNtldRCHUE8VBXMO7v7rvZSj8QPENPcE+XYTq33CguEXtaCtp6qP8UMoePotWF90801PM2enlkhlb8Mkbi1w8iOKtVHpdURNDZmh1t+w+49FUq3Q+nlcXwvLL7to9itrUVC6c2l6itbmx1koulMOBZOcSAeDxxz/NlW9pHVVp1NSGWglLZmD97TycJI/MdR4jh6q24djlJXnVYbO4Hb4cVUcSwGrw8azxdvEbPHeFnERFuFpURERERERERERERERERERERERERERFQG1y+y3fVs9KHn7Lb3GCJvTeHxu894Y8mhQ5ZrXcbItaXlke9u/bZHcR1JyfqSsKuM4hK+Wqkc853PrZdrw6JkVJGxgsLD0RERQ1NRERERERERERERERER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" alt="Bullhorn">
+      <span class="connected-text">Bullhorn connected</span>
+      <span class="connected-sub">24,816 candidates synced · Last sync: just now</span>
+    </div>
+    <div class="criteria-row">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>
+      <span id="criteriaText">Data reactivation in-progress</span>
+    </div>
+  </div>
+
+  <!-- Step pills — stay visible throughout -->
+  <div class="steps-row" id="stepsRow">
+    <div class="step-pill" id="pill0">
+      <div class="pill-check" id="chk0"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><polyline points="1.2,4 3,6 6.8,1.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      Policy Review
+    </div>
+    <div class="step-pill" id="pill1">
+      <div class="pill-check" id="chk1"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><polyline points="1.2,4 3,6 6.8,1.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      Data Audit
+    </div>
+    <div class="step-pill" id="pill2">
+      <div class="pill-check" id="chk2"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><polyline points="1.2,4 3,6 6.8,1.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      Enrich &amp; Refresh
+    </div>
+    <div class="step-pill" id="pill3">
+      <div class="pill-check" id="chk3"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><polyline points="1.2,4 3,6 6.8,1.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      Deduplicate
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <!-- Status cards — appear after steps complete -->
+  <div class="status-section" id="statusSection">
+    <div class="section-header">
+      <span class="section-title">Database Health Check Report</span>
+      <span class="section-count">24,816 records</span>
+    </div>
+    <div class="status-grid">
+      <div class="status-card" id="sc0">
+        <div class="status-card-top"><div class="status-dot" style="background:#059669"></div><div class="status-right"><div class="status-count" style="color:#059669">13,388</div><div class="status-pct">53.9%</div></div></div>
+        <div class="status-name">Enriched</div>
+        <div class="status-bar-track"><div class="status-bar-fill" style="background:#059669;width:54%"></div></div>
+      </div>
+      <div class="status-card" id="sc1">
+        <div class="status-card-top"><div class="status-dot" style="background:#3730a3"></div><div class="status-right"><div class="status-count" style="color:#3730a3">4,947</div><div class="status-pct">19.9%</div></div></div>
+        <div class="status-name">Verified Unchanged</div>
+        <div class="status-bar-track"><div class="status-bar-fill" style="background:#3730a3;width:20%"></div></div>
+      </div>
+      <div class="status-card" id="sc2">
+        <div class="status-card-top"><div class="status-dot" style="background:#FFA925"></div><div class="status-right"><div class="status-count" style="color:#FFA925">472</div><div class="status-pct">1.9%</div></div></div>
+        <div class="status-name">Duplicate Detected</div>
+        <div class="status-bar-track"><div class="status-bar-fill" style="background:#FFA925;width:8%"></div></div>
+      </div>
+      <div class="status-card" id="sc3">
+        <div class="status-card-top"><div class="status-dot" style="background:#ea580c"></div><div class="status-right"><div class="status-count" style="color:#ea580c">2,110</div><div class="status-pct">8.5%</div></div></div>
+        <div class="status-name">Stale or Incomplete</div>
+        <div class="status-bar-track"><div class="status-bar-fill" style="background:#ea580c;width:22%"></div></div>
+      </div>
+      <div class="status-card" id="sc4">
+        <div class="status-card-top"><div class="status-dot" style="background:#d97706"></div><div class="status-right"><div class="status-count" style="color:#d97706">1,688</div><div class="status-pct">6.8%</div></div></div>
+        <div class="status-name">Low Confidence</div>
+        <div class="status-bar-track"><div class="status-bar-fill" style="background:#d97706;width:18%"></div></div>
+      </div>
+      <div class="status-card" id="sc5">
+        <div class="status-card-top"><div class="status-dot" style="background:#dc2626"></div><div class="status-right"><div class="status-count" style="color:#dc2626">1,340</div><div class="status-pct">5.4%</div></div></div>
+        <div class="status-name">Unmatched</div>
+        <div class="status-bar-track"><div class="status-bar-fill" style="background:#dc2626;width:14%"></div></div>
+      </div>
+      <div class="status-card" id="sc6">
+        <div class="status-card-top"><div class="status-dot" style="background:#4f46e5"></div><div class="status-right"><div class="status-count" style="color:#4f46e5">298</div><div class="status-pct">1.2%</div></div></div>
+        <div class="status-name">Suppression</div>
+        <div class="status-bar-track"><div class="status-bar-fill" style="background:#4f46e5;width:6%"></div></div>
+      </div>
+      <div class="status-card" id="sc7">
+        <div class="status-card-top"><div class="status-dot" style="background:#0891b2"></div><div class="status-right"><div class="status-count" style="color:#0891b2">573</div><div class="status-pct">2.4%</div></div></div>
+        <div class="status-name">Newly Added</div>
+        <div class="status-bar-track"><div class="status-bar-fill" style="background:#0891b2;width:10%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer" id="footer">
+    <div class="stat-box">
+      <div class="stat-item"><span class="stat-num">24,816</span><span class="stat-lbl">candidates scored</span></div>
+      <div class="stat-divider"></div>
+      <div class="stat-item"><span class="stat-num green">13,388</span><span class="stat-lbl">enriched</span></div>
+      <div class="stat-divider"></div>
+      <div class="stat-item"><span class="stat-num accent">2,951</span><span class="stat-lbl">re-engage now</span></div>
+      <button style="margin-left:auto;background:#fff;color:#374151;border:1.5px solid #e5e7eb;border-radius:7px;padding:6px 14px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:400;white-space:nowrap;cursor:pointer;">View Report</button>
+    </div>
+  </div>
+
+</div>
+<script>
+  var NUM_PILLS = 4;
+  var STEP_INTERVAL = 380;
+
+  window.addEventListener('load', function() {
+    // Appear all pills as grey first
+    setTimeout(function() {
+      for (var s = 0; s < NUM_PILLS; s++) {
+        (function(i) {
+          setTimeout(function() {
+            document.getElementById('pill' + i).classList.add('show');
+          }, i * 60);
+        })(s);
+      }
+
+      // Then tick each one with progress bar advancing
+      for (var i = 0; i < NUM_PILLS; i++) {
+        (function(idx) {
+          setTimeout(function() {
+            var pill = document.getElementById('pill' + idx);
+            pill.classList.add('done');
+            var pct = Math.round(((idx + 1) / NUM_PILLS) * 100);
+            document.getElementById('progressFill').style.width = pct + '%';
+          }, NUM_PILLS * 60 + 300 + idx * STEP_INTERVAL);
+        })(i);
+      }
+    }, 300);
+
+    // After all steps done, show status cards + swap criteria text
+    var statusStart = 300 + NUM_PILLS * 60 + 300 + NUM_PILLS * STEP_INTERVAL + 500;
+    setTimeout(function() {
+      // Swap criteria text to completed
+      var ct = document.getElementById('criteriaText');
+      if (ct) ct.textContent = 'Data reactivation completed';
+
+      var section = document.getElementById('statusSection');
+      section.classList.add('visible');
+      section.querySelectorAll('.status-card').forEach(function(card, i) {
+        setTimeout(function() { card.classList.add('show'); }, i * 70);
+      });
+    }, statusStart);
+
+    // Footer
+    setTimeout(function() {
+      document.getElementById('footer').classList.add('show');
+    }, statusStart + 8 * 70 + 350);
+  });
+</script>
+</body>
+</html>
