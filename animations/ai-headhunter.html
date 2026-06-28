@@ -28,7 +28,8 @@
   }
 
   html, body {
-    height: 100%;
+    height: auto;
+    width: 100%;
   }
 
   body {
@@ -1045,6 +1046,38 @@ function resetAndLoop() {
 }
 
 setTimeout(typeQuery, 600);
+
+/* ── Auto-height: tell the parent page how tall we actually are ───────────
+   The animation's height changes as the query types, the scan runs and the
+   cards reflow (4-up / 2-up / 1-up). Reporting the real height lets the
+   embedding iframe resize to fit, so nothing is ever clipped at any width. */
+(function () {
+  function reportHeight() {
+    var h = Math.ceil(
+      Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight
+      )
+    );
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'aiHeroResize', id: 'ai-headhunter', height: h }, '*');
+    }
+  }
+
+  // Report on load, on resize, and whenever the content box changes size.
+  window.addEventListener('load', reportHeight);
+  window.addEventListener('resize', reportHeight);
+  if (window.ResizeObserver) {
+    new ResizeObserver(reportHeight).observe(document.body);
+  }
+  // Safety net covering the full animation sequence (typing + scan + cards).
+  var ticks = 0;
+  var poll = setInterval(function () {
+    reportHeight();
+    if (++ticks > 40) clearInterval(poll); // ~12s at 300ms
+  }, 300);
+  reportHeight();
+})();
 </script>
 </body>
 </html>
