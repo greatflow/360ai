@@ -19,7 +19,7 @@
   .hero{position:relative;width:100%;height:clamp(462px,62vw,500px);max-height:500px;
     background:radial-gradient(68% 58% at 50% 50%, rgba(250,130,141,0.06), transparent 72%), #FFFFFF;
     display:flex;justify-content:center;overflow:hidden;}
-  .stage{width:100%;max-width:820px;height:100%;display:flex;flex-direction:column;justify-content:space-between;
+  .stage{width:100%;max-width:none;height:100%;display:flex;flex-direction:column;justify-content:space-between;
     align-items:center;padding:14px clamp(12px,3vw,22px) 16px;}
 
   .lyr{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;width:100%;}
@@ -146,6 +146,30 @@
   setInterval(function(){ attrs.forEach(function(a){a.classList.remove('on');}); attrs[ai].classList.add('on'); ai=(ai+1)%attrs.length; },1300);
   setInterval(function(){ pnodes.forEach(function(n){n.classList.remove('active');}); pnodes[pi].classList.add('active'); pi=(pi+1)%pnodes.length; },900);
   setInterval(function(){ intg.forEach(function(c){c.classList.remove('on');}); intg[ii].classList.add('on'); ii=(ii+1)%intg.length; },1100);
+})();
+
+/* ── Auto-height: tell the parent page how tall we actually are ───────────
+   The hero band sizes itself responsively (clamp(462px,62vw,500px)), so its
+   real height changes with width. Reporting it lets the embedding iframe
+   match exactly, so the diagram is never clipped or left with white space. */
+(function () {
+  function reportHeight() {
+    var h = Math.ceil(
+      Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight
+      )
+    );
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'aiHeroResize', id: 'ai-agents', height: h }, '*');
+    }
+  }
+  window.addEventListener('load', reportHeight);
+  window.addEventListener('resize', reportHeight);
+  if (window.ResizeObserver) {
+    new ResizeObserver(reportHeight).observe(document.body);
+  }
+  reportHeight();
 })();
 </script>
 </body>
