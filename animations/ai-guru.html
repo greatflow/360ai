@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AI Acumen</title>
+<title>AI Guru - 360AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -21,7 +21,7 @@
     background:radial-gradient(80% 55% at 50% 0%, rgba(34,211,238,0.06), transparent 70%), #FFFFFF;
     display:flex;justify-content:center;overflow:hidden;
   }
-  .window{position:relative;width:100%;max-width:760px;height:100%;display:flex;flex-direction:column;padding:0 clamp(12px,3vw,20px);}
+  .window{position:relative;width:100%;max-width:none;height:100%;display:flex;flex-direction:column;padding:0 clamp(12px,3vw,20px);}
   .messages{flex:1;overflow-y:auto;padding:16px 2px 6px;display:flex;flex-direction:column;gap:15px;}
   .messages::-webkit-scrollbar{width:0;height:0;}
   .messages{scrollbar-width:none;}
@@ -240,6 +240,30 @@
     at(Math.max(total+4800,15000), run);
   }
   run();
+})();
+
+/* ── Auto-height: tell the parent page how tall we actually are ───────────
+   The hero band sizes itself responsively (clamp(430px,58vw,500px)), so its
+   real height changes with width. Reporting it lets the embedding iframe
+   match exactly, so the band is never clipped or left with white space. */
+(function () {
+  function reportHeight() {
+    var h = Math.ceil(
+      Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight
+      )
+    );
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'aiHeroResize', id: 'ai-acumen', height: h }, '*');
+    }
+  }
+  window.addEventListener('load', reportHeight);
+  window.addEventListener('resize', reportHeight);
+  if (window.ResizeObserver) {
+    new ResizeObserver(reportHeight).observe(document.body);
+  }
+  reportHeight();
 })();
 </script>
 </body>
