@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Prospector — 360AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0f0f12;--mid:#6b7280;--soft:#9ca3af;--border:#e5e7eb;
+  --surface:#f9fafb;--accent:#A386EC;--accent-light:#F4F0FF;
+  --accent-mid:#F4F0FF;--green:#059669;--green-light:#d1fae5;
+  --white:#ffffff;--radius:14px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+}
+html,body{font-family:'DM Sans',sans-serif;background:#fff;color:var(--ink);margin:0;padding:0}
+
+.scene{width:100%;padding:4px;margin:0;box-sizing:border-box}
+
+
+.product-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--soft);margin-bottom:10px}
+
+/* ── ICP Card ── */
+.icp-card{border:1.5px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:10px 14px 10px;background:var(--white);transition:border-color .3s,box-shadow .3s}
+.icp-card.active{border-color:var(--accent-mid);box-shadow:0 0 0 3px rgba(129,140,248,.12),var(--shadow-sm)}
+.icp-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.icp-title{font-size:11px;font-weight:600;color:var(--accent);letter-spacing:.04em}
+.icp-fields{display:flex;flex-direction:column;gap:9px}
+.icp-field{display:flex;align-items:flex-start;gap:10px;min-height:22px}
+.icp-field-label{font-size:10px;font-weight:500;color:var(--soft);width:136px;flex-shrink:0;padding-top:2px;white-space:nowrap}
+.icp-field-value{font-size:12.5px;color:var(--ink);line-height:1.5;flex:1;min-width:0}
+.cursor{display:inline-block;width:2px;height:12px;background:var(--accent);margin-left:1px;vertical-align:middle;opacity:0}
+.cursor.active{animation:blink 1s step-end infinite;opacity:1}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+.chip-row{display:flex;flex-wrap:wrap;gap:5px;padding-top:1px}
+.chip{font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;border:1px solid var(--border);background:var(--white);color:var(--soft);opacity:0;transform:translateY(4px);transition:background .4s,border-color .4s,color .4s,opacity .25s,transform .25s}
+.chip.visible{opacity:1;transform:translateY(0)}
+.chip.chip-active{background:var(--surface);border-color:#c7d2fe;color:var(--mid)}
+
+.toolbar-row{display:flex;align-items:center;gap:6px;margin-top:12px;padding-top:11px;border-top:1px solid var(--border);flex-wrap:wrap}
+.toolbar-pill{font-size:10.5px;color:var(--mid);padding:3px 9px;border-radius:20px;border:1px solid var(--border);background:var(--white);display:flex;align-items:center;gap:4px;white-space:nowrap}
+.toolbar-spacer{flex:1}
+.run-btn{font-size:12px;font-weight:600;color:var(--white);background:var(--accent);border:none;border-radius:8px;padding:7px 14px;cursor:pointer;display:flex;align-items:center;gap:5px}
+.run-btn.pulse{animation:btnPulse .5s ease}
+@keyframes btnPulse{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+
+/* ── Scan bar ── */
+.scan-bar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-top:10px;display:none}
+.scan-bar.show{display:block}
+.scan-top{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.pulse-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;animation:pd 1.2s ease-in-out infinite}
+@keyframes pd{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.65)}}
+.scan-label{font-size:11px;font-weight:500;color:var(--mid);flex:1}
+.scan-counter{font-size:11px;font-weight:600;color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums}
+.src-wrap{margin-bottom:7px}
+.src-row{display:flex;flex-wrap:nowrap;gap:5px;overflow:hidden;margin-bottom:4px}
+.src-row:last-child{margin-bottom:0}
+.source-tag{font-size:10px;font-weight:500;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:var(--white);color:var(--soft);white-space:nowrap;flex-shrink:0;opacity:0;transition:opacity .2s,background .3s,border-color .3s,color .3s}
+.source-tag.visible{opacity:1}
+.source-tag.src-active{background:var(--accent-light);border-color:var(--accent-mid);color:var(--mid)}
+.progress-track{height:3px;background:var(--border);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-mid));border-radius:3px}
+
+/* ── Stat bar ── */
+.stat-bar{display:none;align-items:center;gap:8px;flex-wrap:nowrap;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 12px;margin-top:10px}
+.stat-bar.show{display:flex}
+.stat-item{font-size:10.5px;color:var(--mid);white-space:nowrap;flex-shrink:0}
+.stat-item strong{font-size:12.5px;font-weight:700;color:var(--ink)}
+.stat-item strong.an{color:var(--accent)}
+.stat-divider{width:1px;height:11px;background:var(--border);flex-shrink:0}
+.stat-done{margin-left:auto;font-size:10px;color:var(--green);font-weight:500;display:flex;align-items:center;gap:3px;flex-shrink:0}
+
+/* ── Results grid ── */
+.results-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+
+
+
+/* ── Prospect card ── */
+.prospect-card{border:1.5px solid var(--border);border-radius:12px;box-shadow:var(--shadow-sm);padding:11px 11px 9px;background:var(--white);min-width:0;display:none;opacity:0;transform:translateY(10px);transition:opacity .4s ease,transform .4s ease}
+.prospect-card.show{display:block}
+.prospect-card.card-up{opacity:1;transform:translateY(0)}
+
+.card-top{display:flex;align-items:flex-start;gap:8px;min-width:0;overflow:hidden;margin-bottom:7px}
+.company-logo{width:52px;height:32px;border-radius:6px;flex-shrink:0;overflow:hidden;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;padding:2px}
+.company-logo img{width:48px;height:28px;object-fit:contain;display:block}
+.logo-fallback{font-size:11px;font-weight:700;color:var(--accent)}
+.card-top-info{flex:1;min-width:0;overflow:hidden}
+.card-name{font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-sector{font-size:10px;color:var(--mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.match-badge{font-size:10px;font-weight:600;color:var(--green);background:var(--green-light);border-radius:5px;padding:2px 5px;white-space:nowrap;flex-shrink:0}
+.signal-row{background:var(--accent-light);border-radius:6px;padding:5px 7px;margin-bottom:6px;display:flex;align-items:flex-start;gap:4px;overflow:hidden}
+.signal-text{font-size:10px;font-weight:500;color:var(--mid);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.why-text{font-size:10px;color:var(--mid);line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;margin-bottom:7px}
+.card-meta{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;overflow:hidden;margin-bottom:7px}
+.meta-item{display:flex;align-items:center;gap:3px;font-size:9.5px;color:var(--soft);white-space:nowrap;flex-shrink:0}
+.meta-dot{width:2px;height:2px;border-radius:50%;background:var(--border);flex-shrink:0}
+.card-divider{height:1px;background:var(--border);margin-bottom:7px;opacity:.7}
+.dm-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--soft);margin-bottom:5px}
+.dm-row{display:flex;flex-direction:column;gap:5px;margin-bottom:7px}
+.dm-person{display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden}
+.dm-avatar{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:7.5px;font-weight:700;color:var(--white)}
+.dm-info{flex:1;min-width:0;overflow:hidden}
+.dm-name{font-size:10px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dm-role{font-size:9px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dm-contact{display:flex;gap:3px;flex-shrink:0}
+.contact-badge{display:flex;align-items:center;gap:2px;font-size:9px;font-weight:500;color:var(--mid);background:var(--surface);border:1px solid #c7d2fe;border-radius:4px;padding:2px 4px;white-space:nowrap}
+.verified-row{display:flex;align-items:center;gap:4px;flex-wrap:nowrap;overflow:hidden}
+.verified-badge{display:flex;align-items:center;gap:3px;font-size:9px;font-weight:500;color:var(--green);background:var(--green-light);border-radius:4px;padding:2px 5px;white-space:nowrap;flex-shrink:0}
+.source-pills{display:flex;gap:3px;overflow:hidden}
+.source-pill{font-size:8.5px;font-weight:500;color:var(--soft);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 4px;white-space:nowrap}
+@media(max-width:400px){.stat-divider{display:none}.stat-bar{gap:5px}}
+
+
+
+/* v2 header pills */
+.icp-header-pills{display:flex;align-items:center;gap:5px;margin-left:auto}
+.icp-header-spacer{flex:1}
+/* Signals row with inline search button */
+.signals-run-row{display:flex;align-items:center;gap:8px;min-height:22px}
+@media(max-width:480px){
+  .signals-run-row{flex-wrap:wrap}
+  .signals-run-row .chip-row{width:100%}
+  .signals-run-row .run-btn{width:100%;justify-content:center;margin-top:4px}
+}
+.signals-run-row .chip-row{flex:1;min-width:0}
+/* Stat bar reorder + truncation */
+.stat-bar{flex-wrap:nowrap;overflow:hidden}
+.stat-hidden-mobile{flex-shrink:0}
+@media(max-width:375px){
+  .stat-hidden-mobile{display:none}
+  .stat-ellipsis{display:flex!important}
+}
+.stat-ellipsis{display:none;font-size:10.5px;color:var(--mid);white-space:nowrap;flex-shrink:0}
+/* Results grid responsive */
+.results-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
+@media(max-width:700px){.results-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:380px){.results-grid{grid-template-columns:1fr}}
+/* Max height constraint */
+.scene{max-height:500px;overflow:hidden}
+@media(max-width:700px){.scene{max-height:none;overflow:visible}}
+/* Tighten card internals for height */
+.prospect-card{padding:9px 9px 7px}
+.card-top{margin-bottom:5px}
+.signal-row{padding:4px 6px;margin-bottom:5px}
+.why-text{margin-bottom:5px;-webkit-line-clamp:1;line-clamp:1}
+.card-meta{margin-bottom:5px}
+.card-divider{margin-bottom:5px}
+.dm-row{margin-bottom:5px;gap:4px}
+/* Scan/stat bar tighter */
+.scan-bar{padding:8px 12px;margin-top:8px}
+.stat-bar{padding:6px 10px;margin-top:8px}
+.results-grid{margin-top:8px}
+</style>
+</head>
+<body>
+<div class="scene">
+
+
+  <!-- ICP Card -->
+  <div class="icp-card" id="icpCard">
+    <div class="icp-header">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <circle cx="7" cy="7" r="5.5" stroke="#3730a3" stroke-width="1.25" fill="none"/>
+        <circle cx="7" cy="7" r="1.8" fill="#3730a3" opacity=".7"/>
+        <line x1="7" y1="1.5" x2="7" y2="3.8" stroke="#3730a3" stroke-width="1.25"/>
+        <line x1="7" y1="10.2" x2="7" y2="12.5" stroke="#3730a3" stroke-width="1.25"/>
+        <line x1="1.5" y1="7" x2="3.8" y2="7" stroke="#3730a3" stroke-width="1.25"/>
+        <line x1="10.2" y1="7" x2="12.5" y2="7" stroke="#3730a3" stroke-width="1.25"/>
+      </svg>
+      <span class="icp-title">ICP Definition</span>
+      <span class="icp-header-spacer"></span>
+      <div class="icp-header-pills">
+        <div class="toolbar-pill">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <rect x="1" y="1.5" width="8" height="7" rx="1" stroke="#6b7280" stroke-width="1"/>
+            <line x1="2.8" y1="4.5" x2="7.2" y2="4.5" stroke="#6b7280" stroke-width=".9"/>
+            <line x1="2.8" y1="6" x2="5.5" y2="6" stroke="#6b7280" stroke-width=".8"/>
+          </svg>
+          Weekly
+        </div>
+        <div class="toolbar-pill">
+          <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+            <circle cx="4.5" cy="4.5" r="4.5" fill="#059669"/>
+            <polyline points="1.8,4.5 3.5,6.3 7.2,2.5" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Human verified
+        </div>
+      </div>
+    </div>
+    <div class="icp-fields">
+      <div class="icp-field">
+        <span class="icp-field-label">Your Agency Sector</span>
+        <div class="icp-field-value"><span id="tf1"></span><span class="cursor" id="cur1"></span></div>
+      </div>
+      <div class="icp-field">
+        <span class="icp-field-label">Target Industry</span>
+        <div class="icp-field-value"><span id="tf2"></span><span class="cursor" id="cur2"></span></div>
+      </div>
+      <div class="icp-field">
+        <span class="icp-field-label">Target Company Size</span>
+        <div class="icp-field-value"><span id="tf3"></span><span class="cursor" id="cur3"></span></div>
+      </div>
+
+      <div class="icp-field">
+        <span class="icp-field-label">Live Job Titles</span>
+        <div class="icp-field-value">
+          <div class="chip-row">
+            <span class="chip" id="jc1">CTO</span>
+            <span class="chip" id="jc2">VP Engineering</span>
+            <span class="chip" id="jc3">VP Sales</span>
+            <span class="chip" id="jc4">Head of Product</span>
+          </div>
+        </div>
+      </div>
+      <div class="icp-field">
+        <span class="icp-field-label">Signals to Monitor</span>
+        <div class="icp-field-value">
+          <div class="signals-run-row">
+            <div class="chip-row">
+              <span class="chip" id="sc1">Fundraising</span>
+              <span class="chip" id="sc2">Leadership Change</span>
+              <span class="chip" id="sc3">Headcount Growth</span>
+              <span class="chip" id="sc4">New Office</span>
+              <span class="chip" id="sc5">...</span>
+            </div>
+            <button class="run-btn" id="runBtn">
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                <circle cx="4.5" cy="4.5" r="3.5" stroke="white" stroke-width="1.2"/>
+                <line x1="7.2" y1="7.2" x2="10" y2="10" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+              Search
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scan bar — shown/hidden via .show class -->
+  <div class="scan-bar" id="scanBar">
+    <div class="scan-top">
+      <div class="pulse-dot"></div>
+      <span class="scan-label" id="scanLabel">Scanning signal sources...</span>
+      <span class="scan-counter" id="scanCounter">0 companies analysed</span>
+    </div>
+    <div class="src-wrap">
+      <div class="src-row">
+        <span class="source-tag" id="st1">LinkedIn</span>
+        <span class="source-tag" id="st2">Crunchbase</span>
+        <span class="source-tag" id="st3">PitchBook</span>
+        <span class="source-tag" id="st4">PR Newswire</span>
+        <span class="source-tag" id="st5">TechCrunch</span>
+        <span class="source-tag" id="st6">Companies House</span>
+        <span class="source-tag" id="st7">Gov.uk</span>
+        <span class="source-tag" id="st8">...</span>
+      </div>
+      <div class="src-row">
+        <span class="source-tag" id="jb1">Indeed</span>
+        <span class="source-tag" id="jb2">LinkedIn Jobs</span>
+        <span class="source-tag" id="jb3">Glassdoor</span>
+        <span class="source-tag" id="jb4">Wellfound</span>
+        <span class="source-tag" id="jb5">Reed</span>
+        <span class="source-tag" id="jb6">Career Pages</span>
+        <span class="source-tag" id="jb7">Remote OK</span>
+        <span class="source-tag" id="jb8">...</span>
+      </div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <!-- Stat bar — shown after scan completes -->
+  <div class="stat-bar" id="statBar">
+    <div class="stat-item"><strong class="an">18</strong> prospects</div>
+    <div class="stat-divider stat-hidden-mobile"></div>
+    <div class="stat-item stat-hidden-mobile"><strong id="scannedNum">0</strong> scanned</div>
+    <div class="stat-divider stat-hidden-mobile"></div>
+    <div class="stat-item stat-hidden-mobile"><strong class="an">20</strong> sources</div>
+    <div class="stat-divider stat-hidden-mobile"></div>
+    <div class="stat-item stat-hidden-mobile"><strong>72M+</strong> companies</div>
+    <div class="stat-ellipsis" id="statEllipsis">...</div>
+    <div class="stat-done" style="margin-left:auto">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <circle cx="5" cy="5" r="4" fill="#059669"/>
+        <polyline points="2.5,5 4,6.5 7.5,3" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Done
+    </div>
+  </div>
+
+  <!-- Results grid — cards shown individually -->
+  <div class="results-grid" id="resultsGrid"></div>
+
+</div>
+
+<script>
+var cardData = [
+  {
+    id:'c1', name:'Rippling', logoUrl:'data:image/png;base64,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', logoInitials:'RI',
+    sector:'Series F - HR and IT SaaS', match:'97%',
+    signal:'Raised $200M Series F - Mar 2025',
+    why:'Aggressive EU expansion post-funding. VP Sales and CTO mandates highly likely within 60 days.',
+    location:'London, UK', headcount:'3,200 employees', signals:'4 signals',
+    dm:[
+      {initials:'PC',color:'#3730a3',name:'Parker Conrad',role:'CEO'},
+      {initials:'MA',color:'#0f766e',name:'Matt Atkinson',role:'CFO'}
+    ],
+    sources:['Crunchbase','TechCrunch']
+  },
+  {
+    id:'c2', name:'Deel', logoUrl:'data:image/png;base64,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', logoInitials:'DE',
+    sector:'Series D - HRTech', match:'94%',
+    signal:'New CTO appointed - Jan 2025',
+    why:'Tech leadership change signals platform restructure and a new senior engineering hiring wave.',
+    location:'Berlin, DE', headcount:'4,500 employees', signals:'3 signals',
+    dm:[
+      {initials:'AB',color:'#b45309',name:'Alex Bouaziz',role:'CEO'},
+      {initials:'SW',color:'#7c3aed',name:'Shuo Wang',role:'COO'}
+    ],
+    sources:['LinkedIn','PR Newswire']
+  },
+  {
+    id:'c3', name:'Lattice', logoUrl:'data:image/png;base64,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', logoInitials:'LA',
+    sector:'Series F - PeopleOps SaaS', match:'91%',
+    signal:'Headcount grew 31% in 90 days',
+    why:'Rapid scaling across engineering and product. Multiple VP-level openings detected on career page.',
+    location:'Dublin, IE', headcount:'1,100 employees', signals:'4 signals',
+    dm:[
+      {initials:'JA',color:'#0f766e',name:'Jack Altman',role:'CEO'},
+      {initials:'CB',color:'#3730a3',name:'Cara Brennan',role:'CPO'}
+    ],
+    sources:['LinkedIn','Companies House']
+  },
+  {
+    id:'c4', name:'Retool', logoUrl:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABACAIAAABqVuVZAAAD5klEQVR42u1bPUsrQRTdOzPRIkaEBCwimGjrzxCxsRAtrCzEJmBjaeUfELS3UBuxEfwAUUTETtA/YKNiQCFFijUoZmfuvOLCFi8vm8TMZnfz5naaONk5c/fcc84a0Fo7tpoXsxBYgCxAFiALkAUosSXCWFQpZUo9AADnPEKAwLgO0loDQJwXjAwgfyc3Nzevr69dnjwAeJ5XKBSmp6ejhEmbK7qzNjc3zV7hxsaGv3jvy1gH0Ql/f38XCoVKpZJKpRCx2wnCmJRyZGSkXC6n0+lImsgwSUsp6e6QUnYPvQ+xUqpPxjydsFleszrICkULULiXyFiEOkjEHyDP8wAAEaWUjAWdKOfcOJSx7iCtNWPMdd2DgwPG2MDAgAisMBrNsA6q1WqTk5OVSgXAzMq0DmNsYWFhdHS0mRRSSk1MTJRKJfNyyZTiREStteu6uVzOn/c9rqWlJaWUWc0tjBMqInLOGWNGOohMBgAEUzWR1OXl5dfX19DQkMkmMuvFEHFxcTECzw3gOE4ul3Nd12/n2HUQAADA7u7u1NTU29tbowUP/rHx5Djn7+/vFxcXPhlFILt17Gtra4tu3pYdlM1mjXdQKIGZKW+JiKlUynXdsbGxWq0W0ET0UjabfXl5yWQyBjlIhEEHQghTWNM+TS1ovVjCrQYidpSikUTknHefvSUAINptMNf+s+7u7oiA+hkgYpOnp6f7+3tSA23O7HK5vL29jYimvEscAUJExtjDw8Ps7Gy1Wv0d8Qc4depNCnl/0aFxAejw8LBarQ4ODnYqAshbUdodXMvLy+l0mj4ueRz08/MDAEqpdrb6l8AZHh5eW1sbHx+XUjb2Eb0nn8/Pzc0Z98m9A+gXJEJbZYzt7+/Pz8939Ff/S6JI7TMzM0NOONjQh/EUPwGRK+dcKUURSu+HfQKUdISJvZOU0J5GIYX2jURG7BYsBfqzg/zQfm9vzw/tUw1FvwwptE8ASTuOs76+fnt7m8/n/5ljkHooFoulUsls1pEYgLTWp6enLd/8+Ph4dHRklrZ6alZ/ERX58Vswv1Bof319HevQvlmRSzo5OQl70oUR2vfIItORHh8fX11dtf9ECAA+Pj7Ozs5aCvHwItcEhPY7OztOP4X2wb68/WSHaEUI8fn52VehfbBp6Mgu2dC+XQKO0G0k46lGhP+paB/7JB8gGknWzQdRO415IUSzB2SMMc/zwgjtY91BNOkzmczq6ioi1ut12aTq9brWemVlhUJ7g6QOOt7fevYn/fn5+fPzs68S/MumVxGxWCxSaG/WzccdoMhLJOVCW35JL6TQ3naQ1UEWIAuQBcgCZAHq2/oDEE3z2GS9rPcAAAAASUVORK5CYII=', logoInitials:'RT',
+    sector:'Series C - Dev Tools SaaS', match:'88%',
+    signal:'3 VP-level roles posted this month',
+    why:'Active senior hiring across commercial functions. No retained search partner identified.',
+    location:'Paris, FR', headcount:'680 employees', signals:'2 signals',
+    dm:[
+      {initials:'DH',color:'#b45309',name:'David Hsu',role:'CEO'},
+      {initials:'JY',color:'#0f766e',name:'Jade Ye',role:'Head of Talent'}
+    ],
+    sources:['LinkedIn','Wellfound']
+  }
+];
+
+function icoEmail(){return '<svg width="8" height="8" viewBox="0 0 8 8" fill="none"><rect x=".5" y="1.5" width="7" height="5" rx="1" stroke="#3730a3" stroke-width=".8"/><path d="M.5 2.5 4 5l3.5-2.5" stroke="#3730a3" stroke-width=".8"/></svg>';}
+function icoPhone(){return '<svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 1h1.8l.7 1.7-.9.5a4.5 4.5 0 0 0 1.7 1.7l.5-.9 1.7.7V6.5A.5.5 0 0 1 6.5 7C2.9 7 1 5.1 1 1.5A.5.5 0 0 1 1.5 1z" stroke="#3730a3" stroke-width=".8" fill="none"/></svg>';}
+function icoBolt(){return '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="flex-shrink:0;margin-top:1px"><path d="M6 1L2 6h3.5L4 9.5 8.5 4H5L6 1z" fill="#3730a3" opacity=".75"/></svg>';}
+function icoCheck(){return '<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><circle cx="4.5" cy="4.5" r="4.5" fill="#059669"/><polyline points="1.8,4.5 3.5,6.3 7.2,2.5" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';}
+function icoPin(){return '<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M4.5 1a2.5 2.5 0 0 1 2.5 2.5c0 1.7-2.5 4.5-2.5 4.5S2 5.2 2 3.5A2.5 2.5 0 0 1 4.5 1z" stroke="#9ca3af" stroke-width=".85"/><circle cx="4.5" cy="3.5" r=".8" fill="#9ca3af"/></svg>';}
+function icoPeople(){return '<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><circle cx="3.5" cy="3" r="1.4" stroke="#9ca3af" stroke-width=".9"/><path d="M1 8c0-1.38 1.12-2.5 2.5-2.5S6 6.62 6 8" stroke="#9ca3af" stroke-width=".9"/><circle cx="6.5" cy="3" r="1.1" stroke="#9ca3af" stroke-width=".9"/><path d="M6 8c0-.95.58-1.77 1.5-2.1" stroke="#9ca3af" stroke-width=".9"/></svg>';}
+function icoStar(){return '<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M4.5 1l.9 2.5H8L5.7 5l.9 2.5L4.5 6 2.4 7.5 3.3 5 1 3.5h2.6L4.5 1z" stroke="#9ca3af" stroke-width=".85" stroke-linejoin="round"/></svg>';}
+
+function buildCard(c){
+  var dms='';
+  for(var d=0;d<c.dm.length;d++){
+    var p=c.dm[d];
+    dms+='<div class="dm-person">'+
+      '<div class="dm-avatar" style="background:'+p.color+'">'+p.initials+'</div>'+
+      '<div class="dm-info"><div class="dm-name">'+p.name+'</div><div class="dm-role">'+p.role+'</div></div>'+
+      '<div class="dm-contact">'+
+        '<span class="contact-badge">'+icoEmail()+'Email</span>'+
+        '<span class="contact-badge">'+icoPhone()+'Phone</span>'+
+      '</div></div>';
+  }
+  var srcs='';
+  for(var r=0;r<c.sources.length;r++){srcs+='<span class="source-pill">'+c.sources[r]+'</span>';}
+  return '<div class="prospect-card" id="'+c.id+'">'+
+    '<div class="card-top">'+
+      '<div class="company-logo" id="logo-'+c.id+'"><span class="logo-fallback">'+c.logoInitials+'</span></div>'+
+      '<div class="card-top-info">'+
+        '<div class="card-name">'+c.name+'</div>'+
+        '<div class="card-sector">'+c.sector+'</div>'+
+      '</div>'+
+      '<span class="match-badge">'+c.match+'</span>'+
+    '</div>'+
+    '<div class="signal-row">'+icoBolt()+'<span class="signal-text">'+c.signal+'</span></div>'+
+    '<div class="why-text">'+c.why+'</div>'+
+    '<div class="card-meta">'+
+      '<div class="meta-item">'+icoPin()+c.location+'</div>'+
+      '<div class="meta-dot"></div>'+
+      '<div class="meta-item">'+icoPeople()+c.headcount+'</div>'+
+      '<div class="meta-dot"></div>'+
+      '<div class="meta-item">'+icoStar()+c.signals+'</div>'+
+    '</div>'+
+    '<div class="card-divider"></div>'+
+    '<div class="dm-label">Key Decision Makers</div>'+
+    '<div class="dm-row">'+dms+'</div>'+
+    '<div class="verified-row">'+
+      '<span class="verified-badge">'+icoCheck()+'Human verified</span>'+
+      '<div class="source-pills">'+srcs+'</div>'+
+    '</div></div>';
+}
+
+function injectCards(){
+  var grid=document.getElementById('resultsGrid');
+  var html='';
+  for(var i=0;i<cardData.length;i++){html+=buildCard(cardData[i]);}
+  grid.innerHTML=html;
+  for(var j=0;j<cardData.length;j++){
+    (function(c){
+      var wrap=document.getElementById('logo-'+c.id);
+      if(!wrap)return;
+      var img=document.createElement('img');
+      img.width=48;img.height=28;img.alt=c.name;img.src=c.logoUrl;
+      img.onerror=(function(w,init){return function(){
+        w.innerHTML='';
+        var fb=document.createElement('span');fb.className='logo-fallback';fb.textContent=init;w.appendChild(fb);
+      };})(wrap,c.logoInitials);
+      wrap.innerHTML='';wrap.appendChild(img);
+    })(cardData[j]);
+  }
+}
+
+function typeInto(elId,curId,text,speed,onDone){
+  var el=document.getElementById(elId);
+  var cur=document.getElementById(curId);
+  el.textContent='';
+  cur.classList.add('active');
+  var i=0;
+  function step(){
+    el.textContent=text.substring(0,i);
+    if(i<text.length){i++;setTimeout(step,speed);}
+    else{cur.classList.remove('active');if(onDone)setTimeout(onDone,100);}
+  }
+  setTimeout(step,40);
+}
+
+function countUp(el,target,dur){
+  var t0=null;
+  function ease(t){return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;}
+  function step(ts){
+    if(!t0)t0=ts;
+    var p=Math.min((ts-t0)/dur,1);
+    el.textContent=Math.floor(ease(p)*target).toLocaleString();
+    if(p<1)requestAnimationFrame(step);
+    else el.textContent=target.toLocaleString();
+  }
+  requestAnimationFrame(step);
+}
+
+// All IDs
+var jChips=['jc1','jc2','jc3','jc4'];
+var sChips=['sc1','sc2','sc3','sc4'];
+var r1Tags=['st1','st2','st3','st4','st5','st6','st7','st8'];
+var r2Tags=['jb1','jb2','jb3','jb4','jb5','jb6','jb7','jb8'];
+var aR1={st2:1,st3:1,st4:1,st5:1};
+var aR2={jb1:1,jb2:1,jb4:1,jb6:1};
+
+var looping=false;
+
+function el(id){return document.getElementById(id);}
+
+function hideAllResults(){
+  el('scanBar').classList.remove('show');
+  el('statBar').classList.remove('show');
+  el('scannedNum').textContent='0';
+  el('scanCounter').textContent='0 companies analysed';
+  el('scanLabel').textContent='Scanning signal sources...';
+  var pf=el('progressFill');
+  pf.style.transition='none';
+  pf.style.width='0%';
+  var allT=r1Tags.concat(r2Tags);
+  for(var t=0;t<allT.length;t++){el(allT[t]).className='source-tag';}
+  var cards=document.querySelectorAll('.prospect-card');
+  for(var c=0;c<cards.length;c++){
+    cards[c].classList.remove('show','card-up');
+    cards[c].style.opacity='0';
+    cards[c].style.transform='translateY(10px)';
+    cards[c].style.transition='none';
+  }
+}
+
+function resetICP(){
+  el('icpCard').classList.remove('active');
+  el('tf1').textContent='';el('tf2').textContent='';el('tf3').textContent='';
+  el('cur1').classList.remove('active');el('cur2').classList.remove('active');
+  el('cur3').classList.remove('active');
+  var all=jChips.concat(sChips);
+  for(var i=0;i<all.length;i++){el(all[i]).className='chip';}
+  el('sc5').className='chip'; // reset '...' — not in sChips array so must be reset explicitly
+  el('runBtn').classList.remove('pulse');
+}
+
+function runAnimation(){
+  if(looping)return;
+  looping=true;
+
+  resetICP();
+  hideAllResults();
+
+  setTimeout(function(){
+    el('icpCard').classList.add('active');
+
+    // Type all 4 fields in sequence
+    typeInto('tf1','cur1','Executive Search, Tech & SaaS',36,function(){
+    typeInto('tf2','cur2','Technology, FinTech, HRTech, SaaS',32,function(){
+    typeInto('tf3','cur3','Series A to C, 50-500 employees',34,function(){
+      // Show job title chips
+      for(var ji=0;ji<jChips.length;ji++){
+        (function(i){setTimeout(function(){el(jChips[i]).classList.add('visible');},i*100);})(ji);
+      }
+      setTimeout(function(){
+        for(var ja=0;ja<jChips.length;ja++){
+          (function(i){setTimeout(function(){el(jChips[i]).classList.add('chip-active');},i*70);})(ja);
+        }
+      },jChips.length*100+120);
+
+      // Show signal chips
+      setTimeout(function(){
+        for(var si=0;si<sChips.length;si++){
+          (function(i){setTimeout(function(){el(sChips[i]).classList.add('visible');},i*100);})(si);
+        }
+        setTimeout(function(){
+          for(var sa=0;sa<sChips.length;sa++){
+            (function(i){setTimeout(function(){el(sChips[i]).classList.add('chip-active');},i*70);})(sa);
+          }
+          // Reveal '...' after last signal chip activates
+          setTimeout(function(){
+            el('sc5').classList.add('visible');
+            el('sc5').classList.add('chip-active');
+          },sChips.length*70+60);
+
+          // Pulse button
+          setTimeout(function(){
+            el('runBtn').classList.add('pulse');
+            setTimeout(function(){el('runBtn').classList.remove('pulse');},550);
+          },sChips.length*70+150);
+
+          // ── SHOW SCAN BAR ──
+          setTimeout(function(){
+            el('scanBar').classList.add('show');
+
+            // Stagger row 1 source tags
+            for(var r1=0;r1<r1Tags.length;r1++){
+              (function(i){setTimeout(function(){
+                var t=el(r1Tags[i]);t.classList.add('visible');
+                if(aR1[r1Tags[i]]){setTimeout(function(){t.classList.add('src-active');},160);}
+              },100+i*130);})(r1);
+            }
+            // Stagger row 2 job board tags
+            for(var r2=0;r2<r2Tags.length;r2++){
+              (function(i){setTimeout(function(){
+                var t=el(r2Tags[i]);t.classList.add('visible');
+                if(aR2[r2Tags[i]]){setTimeout(function(){t.classList.add('src-active');},160);}
+              },600+i*130);})(r2);
+            }
+            // Label change
+            setTimeout(function(){
+              el('scanLabel').textContent='Cross-checking job boards and career pages...';
+            },1000);
+
+            // Progress bar fill + live counter
+            setTimeout(function(){
+              var pf=el('progressFill');
+              pf.style.transition='width 2.4s cubic-bezier(.4,0,.2,1)';
+              pf.style.width='100%';
+              var cS=null;var cT=1243807;
+              function cStep(ts){
+                if(!cS)cS=ts;
+                var p=Math.min((ts-cS)/2200,1);
+                var ep=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+                el('scanCounter').textContent=Math.floor(ep*cT).toLocaleString()+' companies analysed';
+                if(p<1)requestAnimationFrame(cStep);
+                else el('scanCounter').textContent=cT.toLocaleString()+' companies analysed';
+              }
+              requestAnimationFrame(cStep);
+            },250);
+
+            // ── HIDE SCAN BAR, SHOW STAT BAR ──
+            setTimeout(function(){
+              el('scanBar').classList.remove('show');
+              el('statBar').classList.add('show');
+              countUp(el('scannedNum'),1243807,1400);
+
+              // ── SHOW CARDS one by one ──
+              setTimeout(function(){
+                var cards=document.querySelectorAll('.prospect-card');
+                for(var ci=0;ci<cards.length;ci++){
+                  (function(card,delay){
+                    setTimeout(function(){
+                      card.classList.add('show');      // display:block
+                      card.style.transition='none';
+                      card.style.opacity='0';
+                      card.style.transform='translateY(10px)';
+                      // Next frame: enable transition and animate in
+                      requestAnimationFrame(function(){
+                        requestAnimationFrame(function(){
+                          card.style.transition='opacity .4s ease,transform .4s ease';
+                          card.style.opacity='1';
+                          card.style.transform='translateY(0)';
+                        });
+                      });
+                    },delay);
+                  })(cards[ci],ci*160);
+                }
+
+                // ── HOLD then FADE OUT and LOOP ──
+                setTimeout(function(){
+                  var cards2=document.querySelectorAll('.prospect-card');
+                  for(var cf=0;cf<cards2.length;cf++){
+                    cards2[cf].style.transition='opacity .4s ease';
+                    cards2[cf].style.opacity='0';
+                  }
+                  el('statBar').style.transition='opacity .4s ease';
+                  el('statBar').style.opacity='0';
+
+                  setTimeout(function(){
+                    el('statBar').style.transition='';
+                    el('statBar').style.opacity='';
+                    looping=false;
+                    setTimeout(runAnimation,600);
+                  },500);
+
+                },6500);
+
+              },400);
+
+            },2800);
+
+          },sChips.length*70+900); // delay after button pulse before scan
+
+        },sChips.length*100+280);
+      },jChips.length*100+580);
+
+    });  // tf3
+    });  // tf2
+    });  // tf1
+
+  },400);
+}
+
+injectCards();
+setTimeout(runAnimation,200);
+</script>
+</body>
+</html>

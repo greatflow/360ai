@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Headhunter – Hero Visual v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0f0f12;
+    --mid: #6b7280;
+    --soft: #9ca3af;
+    --border: #e5e7eb;
+    --surface: #f9fafb;
+    --accent: #33A8FD;
+    --accent-light: #DBF0FF;
+    --accent-mid: #9ED6FF;
+    --green: #059669;
+    --green-light: #d1fae5;
+    --white: #ffffff;
+    --radius: 14px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow: 0 4px 16px rgba(0,0,0,.07), 0 1px 4px rgba(0,0,0,.05);
+  }
+
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    background: #fff;
+    font-family: 'DM Sans', sans-serif;
+    overflow-y: hidden; /* locked during typing; JS unlocks after */
+    margin: 0;
+  }
+
+  .scene {
+    width: 100%;
+    max-width: 100%;
+    padding: 4px 4px 20px;
+    box-sizing: border-box;
+  }
+
+  /* ── SEARCH CARD ── */
+  .search-card {
+    background: var(--white);
+    padding: 4px 4px 20px;
+    animation: cardIn .5s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .search-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--soft);
+    margin-bottom: 9px;
+  }
+
+  .search-input-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px 8px 13px;
+    transition: border-color .25s, box-shadow .25s;
+    height: 56px;
+    overflow: hidden;
+  }
+
+  /* On mobile the query wraps to more lines — let the box grow naturally */
+  @media (max-width: 600px) {
+    .search-input-row {
+      height: auto;
+      min-height: 52px;
+      overflow: visible;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      padding-bottom: 10px;
+    }
+    /* On mobile, typed-text takes full width, actions drop to next line */
+    .typed-text { max-height: none; overflow: visible; }
+    .input-actions {
+      width: 100%;
+      margin-top: 8px;
+      justify-content: flex-end;
+    }
+    /* Filter row: hide chips beyond 3, show ellipsis */
+    .filter-chip:nth-child(n+6) { display: none; }
+    .filter-more { display: flex !important; }
+  }
+  .search-input-row.focused {
+    border-color: var(--accent-mid);
+    box-shadow: 0 0 0 3px rgba(129,140,248,.12);
+  }
+
+  .search-icon {
+    flex-shrink: 0;
+    color: var(--accent);
+    opacity: .8;
+  }
+
+  .typed-text {
+    flex: 1;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13.5px;
+    color: var(--ink);
+    line-height: 1.55;
+    word-break: break-word;
+    min-width: 0;
+    overflow: hidden;
+    max-height: 38px;
+  }
+
+
+
+  .cursor {
+    display: inline-block;
+    width: 2px;
+    height: 13px;
+    background: var(--accent);
+    margin-left: 1px;
+    vertical-align: middle;
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+
+  /* ── INLINE SEARCH ACTIONS (mic + search btn inside input) ── */
+  .input-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .mic-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    color: var(--mid);
+    cursor: pointer;
+    background: var(--white);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color .2s, color .2s;
+  }
+  .mic-btn:hover { border-color: var(--accent-mid); color: var(--accent); }
+
+  .search-btn-inline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(55,48,163,.25);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background .2s;
+  }
+  .search-btn-inline:hover { background: #312e81; }
+
+  /* toolbar/drop/spacer/search-btn removed in v2 */
+
+  /* ── FILTER CHIPS ── */
+  .upload-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1.5px dashed var(--border);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--mid);
+    background: var(--white);
+    white-space: nowrap;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+  .upload-pill svg { flex-shrink: 0; }
+  .upload-pill:hover { border-color: var(--accent-mid); color: var(--accent); }
+
+  .filter-divider {
+    width: 1px;
+    height: 16px;
+    background: var(--border);
+    flex-shrink: 0;
+    margin: 0 2px;
+  }
+
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 9px;
+    flex-wrap: wrap;
+    padding-top: 0;
+  }
+
+  .filter-label {
+    font-size: 10.5px;
+    color: var(--soft);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .filter-chip {
+    display: flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--soft);
+    background: var(--white);
+    white-space: nowrap;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background .4s ease, border-color .4s ease, color .4s ease;
+  }
+  .filter-chip.on {
+    background: var(--accent-light);
+    border-color: #c7d2fe;
+    color: var(--accent);
+  }
+  .filter-more {
+    display: none;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--soft);
+    background: var(--white);
+    white-space: nowrap;
+  }
+
+  /* ── SCANNING (v3: both scanBar and statBar visible, no swap) ── */
+  .scan-swap-container {
+    margin-top: 12px;
+  }
+  .scanning-bar {
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity .4s, transform .4s;
+  }
+  .scanning-bar.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .scan-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11.5px;
+    color: var(--mid);
+    font-weight: 500;
+    margin-bottom: 7px;
+  }
+
+  .pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50%      { opacity:.4; transform:scale(.7); }
+  }
+
+  #scanCount { margin-left: auto; font-size: 10.5px; color: var(--soft); font-variant-numeric: tabular-nums; }
+
+  .scan-channels {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .channel-tag {
+    font-size: 10.5px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--mid);
+    font-weight: 500;
+    opacity: 0;
+    transform: scale(.9);
+    animation: tagIn .3s cubic-bezier(.22,1,.36,1) forwards;
+  }
+  .channel-tag.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--surface);
+  }
+  @keyframes tagIn { to { opacity:1; transform:scale(1); } }
+
+  .progress-track {
+    height: 3px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-mid), var(--accent));
+    border-radius: 99px;
+    width: 0%;
+    transition: width 2.4s cubic-bezier(.4,0,.2,1);
+  }
+  .progress-fill.go { width: 100%; }
+
+  .scan-stat {
+    font-size: 10.5px;
+    color: var(--soft);
+  }
+  .scan-stat span { color: var(--accent); font-weight: 600; }
+
+  /* ── RESULTS ── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 14px;
+    opacity: 0;
+    transition: opacity .3s;
+  }
+  .results-grid.visible { opacity: 1; }
+
+  /* ── Large screens: 4-col fully fluid, fills ~500px height ── */
+  @media (min-width: 900px) {
+    .results-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    #c3, #c4 { display: block; }
+    .candidate-card { box-sizing: border-box; min-width: 0; padding: 14px 12px; }
+    .scan-swap-container { margin-top: 12px; }
+    .filter-row { margin-top: 12px; padding-top: 0; gap: 7px; }
+    .search-card { padding: 10px 4px 14px; }
+    .card-summary { -webkit-line-clamp: 3; line-clamp: 3; }
+    .footer-stat { margin-top: 10px; padding: 9px 12px; }
+    .scan-header { margin-bottom: 5px; }
+    .scan-channels { margin-bottom: 5px; }
+    .scan-stat { font-size: 10px; }
+    .progress-track { margin-bottom: 4px; }
+    .search-input-row { height: 48px; }
+  }
+
+  /* ── Medium screens: 2-col ── */
+  @media (min-width: 501px) and (max-width: 899px) {
+    .results-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #c3, #c4 { display: block; }
+  }
+  @media (max-width: 500px) {
+    .results-grid { grid-template-columns: 1fr; }
+    #c3, #c4 { display: none; }
+  }
+
+  .candidate-card {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: 11px;
+    padding: 12px;
+    box-shadow: var(--shadow-sm);
+    opacity: 0;
+    transform: translateY(14px);
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .candidate-card.show {
+    animation: cardUp .4s cubic-bezier(.22,1,.36,1) forwards;
+  }
+  @keyframes cardUp {
+    from { opacity:0; transform:translateY(14px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin-bottom: 8px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  /* The name/role wrapper inside card-top must shrink */
+  .card-top-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    letter-spacing: -.5px;
+  }
+
+  .card-name { font-size: 12.5px; font-weight: 600; color: var(--ink); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-role { font-size: 10.5px; color: var(--mid); margin-top: 1px; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .match-badge {
+    margin-left: auto;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--green);
+    background: var(--green-light);
+    padding: 2px 6px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 7px;
+    font-size: 10.5px;
+    color: var(--soft);
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .card-meta-dot { width: 2px; height: 2px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+
+  .card-summary {
+    font-size: 10.5px;
+    color: var(--mid);
+    line-height: 1.5;
+    margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-employer {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--soft);
+    font-weight: 500;
+    margin-top: 9px;
+    margin-bottom: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-employer svg { flex-shrink: 0; color: var(--soft); }
+
+  .skill-tags {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 3px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .skill-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--mid);
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .verified-row { display: flex; align-items: center; gap: 5px; flex-wrap: nowrap; overflow: hidden; margin-bottom: 10px; }
+  .social-icon svg { display: block; }
+  .verified-badge {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--mid);
+    border: 1px solid #c7d2fe;
+  }
+
+  /* ── FOOTER STATS ── */
+  .footer-stat {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity .45s, transform .45s;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    pointer-events: none;
+    margin-top: 8px;
+  }
+
+  /* Mobile: hide middle stat items, show scanned + top matches + ellipsis */
+  @media (max-width: 600px) {
+    .stat-hide-mobile { display: none; }
+    .stat-divider-hide-mobile { display: none; }
+    .stat-more { display: flex !important; }
+    .footer-stat { gap: 8px; flex-wrap: nowrap; }
+    .time-note { display: none; }
+  }
+  .stat-more {
+    display: none;
+    align-items: baseline;
+    gap: 3px;
+    font-size: 11px;
+    color: var(--soft);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .footer-stat.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .stat-item { display: flex; align-items: baseline; gap: 4px; }
+  .stat-num { font-size: 14px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .stat-label { font-size: 10.5px; color: var(--soft); }
+  .stat-divider { width: 1px; height: 16px; background: var(--border); flex-shrink: 0; }
+  .stat-accent { color: var(--accent); }
+
+  /* hide dividers on very small screens to avoid crowding */
+  @media (max-width: 400px) {
+    .stat-divider { display: none; }
+    .footer-stat { gap: 8px; }
+  }
+
+  .time-note { font-size: 10.5px; color: var(--soft); margin-left: auto; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<div class="scene">
+  <div class="search-card">
+
+    <div class="search-input-row focused" id="searchRow">
+      <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <div class="typed-text" id="typedText"><span class="cursor"></span></div>
+      <div class="input-actions">
+        <div class="mic-btn" title="Speak">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </div>
+        <button class="search-btn-inline">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <div class="upload-pill">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Job Spec / CV
+      </div>
+      <div class="filter-divider"></div>
+      <span class="filter-label">Filters</span>
+      <div class="filter-chip" id="fc1">Verified contacts</div>
+      <div class="filter-chip" id="fc2">Passive talent</div>
+      <div class="filter-chip" id="fc3">Active talent</div>
+      <div class="filter-chip" id="fc4">Senior+</div>
+      <div class="filter-more">...</div>
+    </div>
+    <div style="height:1px;background:var(--border);margin-top:10px;"></div>
+
+    <div class="scan-swap-container">
+    <div class="scanning-bar" id="scanBar">
+      <div class="scan-header">
+        <div class="pulse-dot"></div>
+        Scanning 100+ data sources
+        <span id="scanCount">0 profiles analysed</span>
+      </div>
+      <div class="scan-channels" id="scanChannels"></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="scan-stat">Matching across <span>1.5B+</span> profiles — LinkedIn, GitHub, Crunchbase &amp; 97 more</div>
+    </div>
+
+    <div class="footer-stat" id="footerStat">
+      <div class="stat-item">
+        <span class="stat-num stat-accent">347</span>
+        <span class="stat-label">top matches</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-num stat-accent" id="countNum">0</span>
+        <span class="stat-label">scanned</span>
+      </div>
+      <div class="stat-more">···</div>
+      <div class="stat-divider stat-divider-hide-mobile"></div>
+      <div class="stat-item stat-hide-mobile">
+        <span class="stat-num">100+</span>
+        <span class="stat-label">sources</span>
+      </div>
+      <div class="stat-divider stat-divider-hide-mobile"></div>
+      <div class="stat-item stat-hide-mobile">
+        <span class="stat-num">1.5B+</span>
+        <span class="stat-label">talent pool</span>
+      </div>
+      <span class="time-note">Done in <strong style="color:var(--ink)">4.8s</strong></span>
+    </div>
+    </div><!-- /scan-swap-container -->
+
+    <div class="results-grid" id="resultsGrid">
+
+      <div class="candidate-card" id="c1">
+        <div class="card-top">
+          <div class="avatar" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">MH</div>
+          <div>
+            <div class="card-name">Marcus Holloway</div>
+            <div class="card-role">Chief AI Officer · MedTech</div>
+          </div>
+          <div class="match-badge">98%</div>
+        </div>
+        <div class="card-meta">
+          <span>Boston, MA</span>
+          <div class="card-meta-dot"></div>
+          <span>18 yrs</span>
+          <div class="card-meta-dot"></div>
+          <span>Passive</span>
+        </div>
+        <div class="card-summary">Former ML lead at Moderna and Recursion. 14 peer-reviewed papers on generative models for drug-target interaction.</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Generative AI</span>
+          <span class="skill-tag">Drug Discovery</span>
+          <span class="skill-tag">+9</span>
+        </div>
+        <div class="verified-row">
+          <div class="verified-badge">
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Email
+          </div>
+          <div class="verified-badge">
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.37a16 16 0 0 0 5.68 5.68l1.67-1.67a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7a2 2 0 0 1 1.72 2.02z"/></svg>
+            Phone
+          </div>
+        </div>
+      </div>
+
+      <div class="candidate-card" id="c2">
+        <div class="card-top">
+          <div class="avatar" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)">YC</div>
+          <div>
+            <div class="card-name">Yuki Chen</div>
+            <div class="card-role">VP AI Research · HealthTech</div>
+          </div>
+          <div class="match-badge">95%</div>
+        </div>
+        <div class="card-meta">
+          <span>San Francisco</span>
+          <div class="card-meta-dot"></div>
+          <span>15 yrs</span>
+          <div class="card-meta-dot"></div>
+          <span>Open to move</span>
+        </div>
+        <div class="card-summary">Led FDA-cleared AI diagnostics at Tempus. PhD, Stanford. Expert in federated learning across sensitive clinical datasets.</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Federated Learning</span>
+          <span class="skill-tag">FDA 510(k)</span>
+          <span class="skill-tag">+7</span>
+        </div>
+        <div class="verified-row">
+          <div class="verified-badge">
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Email
+          </div>
+          <div class="verified-badge">
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.37a16 16 0 0 0 5.68 5.68l1.67-1.67a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7a2 2 0 0 1 1.72 2.02z"/></svg>
+            Phone
+          </div>
+        </div>
+      </div>
+
+      <div class="candidate-card" id="c3">
+        <div class="card-top">
+          <div class="avatar" style="background:linear-gradient(135deg,#f59e0b,#d97706)">RN</div>
+          <div>
+            <div class="card-name">Ravi Nair</div>
+            <div class="card-role">Head of AI · Biotech</div>
+          </div>
+          <div class="match-badge">92%</div>
+        </div>
+        <div class="card-meta">
+          <span>London, UK</span>
+          <div class="card-meta-dot"></div>
+          <span>13 yrs</span>
+          <div class="card-meta-dot"></div>
+          <span>Passive</span>
+        </div>
+        <div class="card-summary">Commercialised AI protein-folding pipeline at BenevolentAI. Led Series C AI strategy briefings at board level.</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Protein Modelling</span>
+          <span class="skill-tag">MLOps</span>
+          <span class="skill-tag">+6</span>
+        </div>
+        <div class="verified-row">
+          <div class="verified-badge">
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Email
+          </div>
+          <div class="verified-badge">
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.37a16 16 0 0 0 5.68 5.68l1.67-1.67a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7a2 2 0 0 1 1.72 2.02z"/></svg>
+            Phone
+          </div>
+        </div>
+      </div>
+
+      <div class="candidate-card" id="c4">
+        <div class="card-top">
+          <div class="avatar" style="background:linear-gradient(135deg,#10b981,#059669)">LP</div>
+          <div>
+            <div class="card-name">Lena Petrov</div>
+            <div class="card-role">Director of ML · Digital Health</div>
+          </div>
+          <div class="match-badge">89%</div>
+        </div>
+        <div class="card-meta">
+          <span>Berlin, DE</span>
+          <div class="card-meta-dot"></div>
+          <span>11 yrs</span>
+          <div class="card-meta-dot"></div>
+          <span>Open to move</span>
+        </div>
+        <div class="card-summary">Built clinical NLP platform at Bayer Digital. PhD, ETH Zurich. Published EMA submission frameworks for AI-assisted diagnostics.</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Clinical NLP</span>
+          <span class="skill-tag">EMA Compliance</span>
+          <span class="skill-tag">+5</span>
+        </div>
+        <div class="verified-row">
+          <div class="verified-badge">
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Email
+          </div>
+          <div class="verified-badge">
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.37a16 16 0 0 0 5.68 5.68l1.67-1.67a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7a2 2 0 0 1 1.72 2.02z"/></svg>
+            Phone
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Scenario data ────────────────────────────────────────────────
+
+const scenarios = [
+  {
+    query: "Head of AI for a professional services firm, must bridge deep ML engineering credibility with the ability to sell AI transformation internally to senior partners",
+    channels: ["LinkedIn","GitHub","Stack Overflow","arXiv","Crunchbase","Google Scholar","Wellfound","ResearchGate","Twitter/X","Medium"],
+    activeChannels: ["LinkedIn","GitHub","Stack Overflow","Google Scholar"],
+    cards: [
+      { initials:"DS", employer:"Accenture", since:"2021", socials:'<span class="social-icon" title="LinkedIn" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#0a66c2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></span><span class="social-icon" title="GitHub" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#24292f"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></span><span class="social-icon" title="Google Scholar" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#4285f4"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg></span>', photo:"data:image/jpeg;base64,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", gradient:"linear-gradient(135deg,#6366f1,#8b5cf6)", name:"Daniel Sato",   role:"Head of AI · Accenture",             match:97, loc:"London, UK",    yrs:14, status:"Passive",       summary:"Led Accenture's Applied AI practice across Financial Services. Shipped production LLM tools adopted by over 3,000 client-facing practitioners.",   skills:["Strategy","LLMs","Python"],        extra:6 },
+      { initials:"PT", employer:"McKinsey & Co.", since:"2020", socials:'<span class="social-icon" title="LinkedIn" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#0a66c2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></span><span class="social-icon" title="Google Scholar" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#4285f4"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg></span>', photo:"data:image/jpeg;base64,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", gradient:"linear-gradient(135deg,#0ea5e9,#0284c7)", name:"Priya Thomas",  role:"Chief AI Officer · McKinsey & Co.",   match:94, loc:"Texas, US",   yrs:16, status:"Open to move", summary:"Built McKinsey's internal AI platform from the ground up. PhD, MIT. Specialist in aligning AI product roadmaps with senior partner priorities.",   skills:["Governance","RAG","LLMs"],         extra:5 },
+      { initials:"OB", employer:"Linklaters LLP", since:"2022", socials:'<span class="social-icon" title="LinkedIn" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#0a66c2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></span><span class="social-icon" title="GitHub" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#24292f"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></span><span class="social-icon" title="Stack Overflow" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#f48024"><path d="M17.36 20.2v-5.38h1.79V22H3v-7.18h1.8v5.38zM6.77 14.32l.37-1.76 8.04 1.69-.37 1.76zm1.15-4.21.76-1.61 7.44 3.49-.76 1.62zm2.26-3.99 1.15-1.38 6.22 5.18-1.16 1.38zM15.17 4l1.44-1.09 4.31 5.73-1.44 1.09zM6.6 18.2v-1.8h8.07v1.8z"/></svg></span>', photo:"data:image/jpeg;base64,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", gradient:"linear-gradient(135deg,#f59e0b,#d97706)", name:"Oliver Beck",   role:"VP of AI · Linklaters LLP",          match:91, loc:"Frankfurt, DE",  yrs:11, status:"Passive",       summary:"Grew Linklaters' AI product division from zero to £14M annual revenue. Expert at packaging ML outputs into board-ready business cases.",          skills:["NLP","Coaching","Python"],         extra:4 },
+      { initials:"AJ", employer:"KPMG", since:"2021", socials:'<span class="social-icon" title="LinkedIn" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#0a66c2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></span><span class="social-icon" title="X (Twitter)" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#000000"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.261 5.638 5.903-5.638zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></span>', photo:"data:image/jpeg;base64,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", gradient:"linear-gradient(135deg,#10b981,#059669)", name:"Amara Jensen",  role:"Director of Applied AI · KPMG",      match:88, loc:"Singapore",     yrs:12, status:"Open to move", summary:"Ran AI transformation for KPMG's APAC region. Masters, Cambridge. Led 14 engagements with measurable revenue and margin impact for clients.",    skills:["MLOps","Stakeholder","GenAI"],   extra:3 }
+    ]
+  },
+  {
+    query: "CEO with M&A integration experience and a cost-out track record, able to step into an industrial services business and retain a legacy management team through change",
+    channels: ["LinkedIn","Crunchbase","BoardEx","PitchBook","Companies House","AngelList","Wellfound","Twitter/X","PE Wire","Preqin"],
+    activeChannels: ["LinkedIn","BoardEx","PitchBook","PE Wire"],
+    cards: [
+      { initials:"JH", employer:"Biffa plc", since:"2019", socials:'<span class="social-icon" title="LinkedIn" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#0a66c2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></span>', photo:"data:image/jpeg;base64,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", gradient:"linear-gradient(135deg,#6366f1,#8b5cf6)", name:"James Hartley", role:"CEO · Biffa plc",                    match:97, loc:"Manchester, UK", yrs:20, status:"Passive",       summary:"Led Biffa through its KKR-backed transformation, delivering 3x EBITDA growth across 6 bolt-on acquisitions over 4 years. Retained full senior leadership team.", skills:["Integration","P&L","Turnaround"],      extra:5 },
+      { initials:"SR", employer:"Elior Group", since:"2020", socials:'<span class="social-icon" title="LinkedIn" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#0a66c2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></span><span class="social-icon" title="X (Twitter)" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#000000"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.261 5.638 5.903-5.638zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></span><span class="social-icon" title="Facebook" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#1877f2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></span>', photo:"data:image/jpeg;base64,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", gradient:"linear-gradient(135deg,#e11d48,#be123c)", name:"Sophie Renard",  role:"Group CEO · Elior Group",            match:94, loc:"Paris, FR",      yrs:17, status:"Open to move", summary:"Turned around Elior's UK division under Charterhouse ownership. Delivered £28M cost reduction while retaining 90% of the existing management team.",  skills:["Turnaround","Leadership","M&A"],    extra:4 },
+      { initials:"MW", employer:"Mitie Group plc", since:"2022", socials:'<span class="social-icon" title="LinkedIn" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#0a66c2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></span><span class="social-icon" title="BoardEx" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#1d5295"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></span>', photo:"data:image/jpeg;base64,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", gradient:"linear-gradient(135deg,#f59e0b,#d97706)", name:"Marcus Webb",    role:"CEO · Mitie Group plc",              match:91, loc:"London, UK",    yrs:15, status:"Passive",       summary:"Appointed CEO at Mitie following a £22M cost-out programme he led as COO. Strong track record in complex workforce transitions and union negotiations.", skills:["Restructuring","Relations","EBITDA"], extra:3 },
+      { initials:"NK", employer:"Veolia UK & Ireland", since:"2021", socials:'<span class="social-icon" title="LinkedIn" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#0a66c2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></span><span class="social-icon" title="X (Twitter)" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#000000"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.261 5.638 5.903-5.638zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></span><span class="social-icon" title="BoardEx" style="cursor:pointer;display:inline-flex;align-items:center;opacity:.75;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#1d5295"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></span>', photo:"data:image/jpeg;base64,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", gradient:"linear-gradient(135deg,#0ea5e9,#0284c7)", name:"Nadia Kowalski", role:"Regional MD · Veolia UK & Ireland",  match:88, loc:"London, UK",    yrs:13, status:"Open to move", summary:"Scaled Veolia's UK division from £40M to £120M revenue. Deep experience in cross-border carve-outs, ERP migrations and multi-site contract mobilisation.", skills:["Carve-outs","Migration","M&A"],                  extra:4 }
+    ]
+  }
+];
+
+let scenarioIndex = 0;
+
+// ── Build card HTML ──────────────────────────────────────────────
+function buildCard(c) {
+  var skillHtml = c.skills.map(function(s) { return '<span class="skill-tag">' + s + '</span>'; }).join('') +
+    '<span class="skill-tag">+' + c.extra + '</span>';
+  var avatarHtml = c.photo
+    ? '<div class="avatar" style="background:#e5e7eb;overflow:hidden;padding:0;"><img src="' + c.photo + '" style="width:100%;height:100%;object-fit:cover;object-position:center top;display:block;" /></div>'
+    : '<div class="avatar" style="background:' + c.gradient + '">' + c.initials + '</div>';
+  var employerHtml = (c.employer && c.since)
+    ? '<div class="card-employer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>' + c.employer + ' &middot; ' + c.since + ' &ndash; Present</div>'
+    : '';
+  return '<div class="card-top">' +
+    avatarHtml +
+    '<div class="card-top-info"><div class="card-name">' + c.name + '</div><div class="card-role">' + c.role + '</div></div>' +
+    '<div class="match-badge">' + c.match + '%</div>' +
+    '</div>' +
+    '<div class="card-meta"><span>' + c.loc + '</span><div class="card-meta-dot"></div><span>' + c.yrs + ' yrs</span><div class="card-meta-dot"></div><span>' + c.status + '</span></div>' +
+    '<div class="verified-row">' +
+    '<div class="verified-badge"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email</div>' +
+    '<div class="verified-badge"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.37a16 16 0 0 0 5.68 5.68l1.67-1.67a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7a2 2 0 0 1 1.72 2.02z"/></svg>Phone</div>' +
+    (c.socials || '') +
+    '</div>' +
+    '<div class="card-summary">' + c.summary + '</div>' +
+    employerHtml +
+    '<div class="skill-tags">' + skillHtml + '</div>';
+}
+
+function loadScenario(index) {
+  var s = scenarios[index];
+  var grid = document.getElementById('resultsGrid');
+  grid.innerHTML = '';
+  s.cards.forEach(function(c, i) {
+    var div = document.createElement('div');
+    div.className = 'candidate-card';
+    div.id = 'c' + (i + 1);
+    div.innerHTML = buildCard(c);
+    grid.appendChild(div);
+  });
+}
+
+// ── Custom eased scroll ──────────────────────────────────────────
+function easedScroll(el, target, duration, onDone) {
+  var start = getScrollTop();
+  var distance = target - start;
+  if (Math.abs(distance) < 2) { if (onDone) onDone(); return; }
+  var startTime = null;
+  function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+  function step(timestamp) {
+    if (!startTime) startTime = timestamp;
+    var elapsed = timestamp - startTime;
+    var progress = Math.min(elapsed / duration, 1);
+    var pos = start + distance * easeInOutCubic(progress);
+    // Set on both to cover Safari (body) and Chrome/FF (documentElement)
+    document.documentElement.scrollTop = pos;
+    document.body.scrollTop = pos;
+    if (progress < 1) { requestAnimationFrame(step); }
+    else { if (onDone) onDone(); }
+  }
+  requestAnimationFrame(step);
+}
+
+// Cross-browser scroll helper: Safari scrolls body, Chrome/FF scroll documentElement
+function getScroller() {
+  // Detect which element is actually scrolling
+  var doc = document.documentElement;
+  var body = document.body;
+  return (doc.scrollTop > 0 || body.scrollTop === 0) ? doc : body;
+}
+
+// Cross-browser scroll position getter
+function getScrollTop() {
+  return Math.max(document.documentElement.scrollTop, document.body.scrollTop);
+}
+
+// Cross-browser scroll target (max scroll position)
+function getMaxScroll() {
+  return Math.max(
+    document.documentElement.scrollHeight,
+    document.body.scrollHeight
+  ) - window.innerHeight;
+}
+
+function typeQuery() {
+  var scroller = getScroller();
+  document.body.style.overflowY = 'hidden';
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+
+  var s = scenarios[scenarioIndex];
+  loadScenario(scenarioIndex);
+
+  var el = document.getElementById('typedText');
+  el.innerHTML = '<span class="cursor"></span>';
+  var i = 0;
+  var iv = setInterval(function() {
+    if (i <= s.query.length) {
+      el.innerHTML = s.query.slice(0, i) + '<span class="cursor"></span>';
+      i++;
+    } else {
+      clearInterval(iv);
+      // Activate filter chips with a staggered cascade
+      ['fc1','fc2','fc3','fc4'].forEach(function(id, i) {
+        setTimeout(function() {
+          var el = document.getElementById(id);
+          if (el) el.classList.add('on');
+        }, i * 80);
+      });
+      setTimeout(function() {
+        document.body.style.overflowY = '';
+        var scrollTarget = getMaxScroll();
+        easedScroll(scroller, scrollTarget, 2800, null);
+        startScan(s);
+      }, 500);
+    }
+  }, 32);
+}
+
+function startScan(s) {
+  document.getElementById('scanBar').classList.add('visible');
+  document.getElementById('searchRow').classList.remove('focused');
+
+  var target = 1243807;
+  var countEl = document.getElementById('scanCount');
+  var count = 0;
+  var ci = setInterval(function() {
+    count += Math.floor(Math.random() * 55000 + 15000);
+    if (count >= target) { count = target; clearInterval(ci); }
+    countEl.textContent = count.toLocaleString() + ' profiles analysed';
+  }, 70);
+
+  var channelEl = document.getElementById('scanChannels');
+  var activeChannels = s.activeChannels || [];
+  var visibleChannels = s.channels.slice(0, 7);
+  visibleChannels.forEach(function(ch, i) {
+    setTimeout(function() {
+      var tag = document.createElement('div');
+      var isActive = activeChannels.indexOf(ch) !== -1;
+      tag.className = 'channel-tag' + (isActive ? ' active' : '');
+      tag.style.animationDelay = '0ms';
+      tag.textContent = ch;
+      channelEl.appendChild(tag);
+      // After last visible tag, append the "..." indicator
+      if (i === visibleChannels.length - 1) {
+        setTimeout(function() {
+          var more = document.createElement('div');
+          more.className = 'channel-tag';
+          more.style.animationDelay = '0ms';
+          more.textContent = '...';
+          channelEl.appendChild(more);
+        }, 160);
+      }
+    }, i * 160);
+  });
+
+  setTimeout(function() { document.getElementById('progressFill').classList.add('go'); }, 60);
+
+  // v3: no swap — stat bar fades in below scanBar after progress completes
+  setTimeout(function() {
+    var footerStat = document.getElementById('footerStat');
+    footerStat.classList.add('visible');
+
+    // Count up the scanned number
+    var el = document.getElementById('countNum');
+    var n = 0;
+    var finalN = 1243807;
+    var ni = setInterval(function() {
+      n += Math.floor(Math.random() * 75000 + 20000);
+      if (n >= finalN) { n = finalN; clearInterval(ni); }
+      el.textContent = n.toLocaleString();
+    }, 45);
+  }, 2500);
+
+  setTimeout(showResults, 3400);
+}
+
+function showResults() {
+  document.getElementById('resultsGrid').classList.add('visible');
+
+  ['c1','c2','c3','c4'].forEach(function(id, i) {
+    setTimeout(function() {
+      var el = document.getElementById(id);
+      if (el) el.classList.add('show');
+    }, i * 150);
+  });
+
+  setTimeout(resetAndLoop, 6500);
+}
+
+function resetAndLoop() {
+  ['resultsGrid','footerStat','scanBar'].forEach(function(id) {
+    document.getElementById(id).classList.remove('visible');
+  });
+  document.getElementById('progressFill').classList.remove('go');
+  ['c1','c2','c3','c4'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('show');
+  });
+  document.getElementById('scanChannels').innerHTML = '';
+  document.getElementById('scanCount').textContent = '0 profiles analysed';
+  document.getElementById('countNum').textContent = '0';
+  document.getElementById('searchRow').classList.add('focused');
+  ['fc1','fc2','fc3','fc4'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('on');
+  });
+
+  scenarioIndex = (scenarioIndex + 1) % scenarios.length;
+
+  var scroller = getScroller();
+  easedScroll(scroller, 0, 2000, function() {
+    setTimeout(function() { typeQuery(); }, 400);
+  });
+}
+
+setTimeout(typeQuery, 600);
+</script>
+</body>
+</html>
