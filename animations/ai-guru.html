@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AI Guru - 360AI</title>
+<title>AI Guru | 360AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -21,12 +21,12 @@
     background:radial-gradient(80% 55% at 50% 0%, rgba(34,211,238,0.06), transparent 70%), #FFFFFF;
     display:flex;justify-content:center;overflow:hidden;
   }
-  .window{position:relative;width:100%;max-width:none;height:100%;display:flex;flex-direction:column;padding:0 clamp(12px,3vw,20px);}
-  .messages{flex:1;overflow-y:auto;padding:16px 2px 6px;display:flex;flex-direction:column;gap:15px;}
+  .window{position:relative;width:100%;max-width:760px;height:100%;display:flex;flex-direction:column;padding:0 clamp(12px,3vw,20px);}
+  .messages{order:2;flex:1;overflow-y:auto;padding:16px 2px 6px;display:flex;flex-direction:column;gap:15px;}
   .messages::-webkit-scrollbar{width:0;height:0;}
   .messages{scrollbar-width:none;}
 
-  .greeting{position:absolute;left:0;right:0;top:0;bottom:78px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 18px;pointer-events:none;transition:opacity .6s ease,transform .6s ease;}
+  .greeting{position:absolute;left:0;right:0;top:0;bottom:36%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 18px;pointer-events:none;transition:opacity .6s ease,transform .6s ease;}
   .greeting.hide{opacity:0;transform:translateY(-12px);}
   .gava{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,var(--cyan-400),var(--cyan-600));box-shadow:0 4px 14px rgba(6,182,212,0.30);margin-bottom:14px;}
   .gava svg{width:21px;height:21px;}
@@ -69,7 +69,7 @@
   .working{display:flex;align-items:center;gap:10px;padding:2px 0;}
   .wtext{font-size:clamp(12px,2vw,13.5px);color:var(--ink-2);}
 
-  .composer{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:13px;padding:9px 9px 9px 14px;margin:6px 0 14px;background:#fff;box-shadow:0 2px 11px rgba(16,22,34,0.05);}
+  .composer{order:1;transition:transform .55s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:13px;padding:9px 9px 9px 14px;margin:12px 0 8px;background:#fff;box-shadow:0 2px 11px rgba(16,22,34,0.05);}
   .cfield{flex:1;min-width:0;font-size:clamp(12.5px,2vw,14px);color:var(--ink);white-space:nowrap;overflow:hidden;}
   .cfield .ph{color:var(--ink-3);}
   .ccaret{display:inline-block;width:1.5px;height:1.05em;background:var(--cyan-500);vertical-align:-2px;margin-left:1px;opacity:0;}
@@ -185,6 +185,10 @@
   var el={}; ids.forEach(function(i){el[i]=document.getElementById(i);});
   var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var show=function(e){e.classList.add('show');}, hide=function(e){e.classList.remove('show');};
+  var composer=document.querySelector('.composer'), win=document.querySelector('.window'), lifted=false;
+  function centerComposer(){ var H=win.clientHeight; var off=H*0.56-(composer.offsetTop+composer.offsetHeight/2); if(off<0)off=0; composer.style.transform='translateY('+off+'px)'; }
+  function centerInstant(){ composer.style.transition='none'; centerComposer(); void composer.offsetWidth; composer.style.transition=''; }
+  function liftComposer(){ lifted=true; composer.style.transform='translateY(0)'; }
   var scrollEnd=function(){ if(messages.scrollHeight>messages.clientHeight+8) messages.scrollTo({top:messages.scrollHeight,behavior:'smooth'}); };
   var Q1="Which UK tech firms raised Series A+ and need a CFO?";
   var Q2="Now find the best CFO match for each.";
@@ -210,10 +214,11 @@
     ids.forEach(function(i){hide(el[i]);});
     typed.textContent=''; caret.classList.remove('on'); ph.style.display='inline';
     greeting.classList.remove('hide'); messages.scrollTop=0;
+    lifted=false; centerInstant();
 
     at(700, focusField);
     var q1end=typeAt(1000, Q1, 30);
-    at(q1end+250, function(){ greeting.classList.add('hide'); sendUser(el.q1); });
+    at(q1end+250, function(){ greeting.classList.add('hide'); liftComposer(); sendUser(el.q1); });
     at(q1end+650, function(){ show(el.think1); scrollEnd(); });
     at(q1end+1850, function(){ hide(el.think1); show(el.ai1); scrollEnd(); });
     at(q1end+2150, function(){ show(el.c0); });
@@ -239,31 +244,8 @@
     var total=q3end+700;
     at(Math.max(total+4800,15000), run);
   }
+  window.addEventListener('resize', function(){ if(!lifted) centerInstant(); });
   run();
-})();
-
-/* ── Auto-height: tell the parent page how tall we actually are ───────────
-   The hero band sizes itself responsively (clamp(430px,58vw,500px)), so its
-   real height changes with width. Reporting it lets the embedding iframe
-   match exactly, so the band is never clipped or left with white space. */
-(function () {
-  function reportHeight() {
-    var h = Math.ceil(
-      Math.max(
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight
-      )
-    );
-    if (window.parent !== window) {
-      window.parent.postMessage({ type: 'aiHeroResize', id: 'ai-acumen', height: h }, '*');
-    }
-  }
-  window.addEventListener('load', reportHeight);
-  window.addEventListener('resize', reportHeight);
-  if (window.ResizeObserver) {
-    new ResizeObserver(reportHeight).observe(document.body);
-  }
-  reportHeight();
 })();
 </script>
 </body>
