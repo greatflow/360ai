@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AI Guru | 360AI</title>
+<title>AI Guru - 360AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -14,14 +14,14 @@
     --line:#E9EDF2; --surface:#FFFFFF; --bubble:#F3F5F8;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
-  html,body{width:100%;}
+  html,body{width:100%;height:100%;}
   body{font-family:"DM Sans",system-ui,-apple-system,sans-serif;background:#fff;}
   .hero{
-    position:relative;width:100%;height:clamp(430px,58vw,500px);max-height:500px;
+    position:relative;width:100%;height:100vh;height:100svh;
     background:radial-gradient(80% 55% at 50% 0%, rgba(34,211,238,0.06), transparent 70%), #FFFFFF;
     display:flex;justify-content:center;overflow:hidden;
   }
-  .window{position:relative;width:100%;max-width:760px;height:100%;display:flex;flex-direction:column;padding:0 clamp(12px,3vw,20px);}
+  .window{position:relative;width:100%;max-width:880px;height:100%;display:flex;flex-direction:column;padding:0 clamp(12px,3vw,20px);}
   .messages{order:2;flex:1;overflow-y:auto;padding:16px 2px 6px;display:flex;flex-direction:column;gap:15px;}
   .messages::-webkit-scrollbar{width:0;height:0;}
   .messages{scrollbar-width:none;}
@@ -80,7 +80,12 @@
 
   .reveal{opacity:0;transform:translateY(8px);transition:opacity .5s ease,transform .55s cubic-bezier(.34,1.25,.4,1);}
   .reveal.show{opacity:1;transform:none;}
-  @media(max-width:520px){ .hide-sm{display:none;} .messages{gap:13px;} }
+  @media(max-width:600px){
+    .messages{gap:13px;}
+    .cards{flex-wrap:wrap;}
+    .card{flex:1 1 100%;}
+    .more{flex-basis:100%;}
+  }
   @media (prefers-reduced-motion: reduce){.reveal{transition:none;}.dots span{animation:none;}.ccaret.on{animation:none;}.greeting{transition:none;}}
 </style>
 </head>
@@ -189,7 +194,8 @@
   function centerComposer(){ var H=win.clientHeight; var off=H*0.56-(composer.offsetTop+composer.offsetHeight/2); if(off<0)off=0; composer.style.transform='translateY('+off+'px)'; }
   function centerInstant(){ composer.style.transition='none'; centerComposer(); void composer.offsetWidth; composer.style.transition=''; }
   function liftComposer(){ lifted=true; composer.style.transform='translateY(0)'; }
-  var scrollEnd=function(){ if(messages.scrollHeight>messages.clientHeight+8) messages.scrollTo({top:messages.scrollHeight,behavior:'smooth'}); };
+  var scrollEnd=function(){};
+  var scrollToPrompt=function(el){ var er=el.getBoundingClientRect(), mr=messages.getBoundingClientRect(); var top=messages.scrollTop+(er.top-mr.top)-6; messages.scrollTo({top:Math.max(0,top),behavior:'smooth'}); };
   var Q1="Which UK tech firms raised Series A+ and need a CFO?";
   var Q2="Now find the best CFO match for each.";
   var Q3="Draft an intro email to the top match at each company.";
@@ -207,7 +213,7 @@
     for(var i=0;i<=text.length;i++){ (function(n){ at(start+n*ms,function(){ typed.textContent=text.slice(0,n); }); })(i); }
     return start+text.length*ms;
   }
-  function sendUser(b){ typed.textContent=''; caret.classList.remove('on'); ph.style.display='inline'; show(b); scrollEnd(); }
+  function sendUser(b){ typed.textContent=''; caret.classList.remove('on'); ph.style.display='inline'; show(b); scrollToPrompt(b); }
 
   function run(){
     timers.forEach(clearTimeout); timers=[];
