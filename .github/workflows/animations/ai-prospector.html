@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Prospector | 360AI</title>
+<title>AI Prospector — 360AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -28,9 +28,9 @@ html,body{font-family:'DM Sans',sans-serif;background:#fff;color:var(--ink);marg
 .icp-card.active{border-color:var(--accent-mid);box-shadow:0 0 0 3px rgba(129,140,248,.12),var(--shadow-sm)}
 .icp-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .icp-title{font-size:11px;font-weight:600;color:var(--accent);letter-spacing:.04em}
-.icp-fields{display:flex;flex-direction:column;gap:9px}
-.icp-field{display:flex;align-items:flex-start;gap:10px;min-height:22px}
-.icp-field-label{font-size:10px;font-weight:500;color:var(--soft);width:136px;flex-shrink:0;padding-top:2px;white-space:nowrap}
+.icp-fields{display:flex;flex-direction:column;gap:4px}
+.icp-field{display:flex;align-items:flex-start;gap:4px;min-height:14px}
+.icp-field-label{font-size:10px;font-weight:500;color:var(--soft);width:110px;flex-shrink:0;padding-top:2px;white-space:nowrap}
 .icp-field-value{font-size:12.5px;color:var(--ink);line-height:1.5;flex:1;min-width:0}
 .cursor{display:inline-block;width:2px;height:12px;background:var(--accent);margin-left:1px;vertical-align:middle;opacity:0}
 .cursor.active{animation:blink 1s step-end infinite;opacity:1}
@@ -201,7 +201,7 @@ html,body{font-family:'DM Sans',sans-serif;background:#fff;color:var(--ink);marg
         <div class="icp-field-value"><span id="tf2"></span><span class="cursor" id="cur2"></span></div>
       </div>
       <div class="icp-field">
-        <span class="icp-field-label">Target Company Size</span>
+        <span class="icp-field-label">ICP Company Size</span>
         <div class="icp-field-value"><span id="tf3"></span><span class="cursor" id="cur3"></span></div>
       </div>
 
@@ -499,7 +499,7 @@ function runAnimation(){
 
     // Type all 4 fields in sequence
     typeInto('tf1','cur1','Executive Search, Tech & SaaS',36,function(){
-    typeInto('tf2','cur2','Technology, FinTech, HRTech, SaaS',32,function(){
+    typeInto('tf2','cur2','Technology, FinTech, SaaS',32,function(){
     typeInto('tf3','cur3','Series A to C, 50-500 employees',34,function(){
       // Show job title chips
       for(var ji=0;ji<jChips.length;ji++){
