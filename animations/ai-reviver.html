@@ -202,13 +202,13 @@ html, body { font-family: 'DM Sans', sans-serif; background: #fff; color: var(--
 
 .status-card { border: 1.5px solid var(--border); border-radius: 10px; padding: 7px 9px 6px; background: var(--white); box-shadow: var(--shadow-sm); min-width: 0; opacity: 0; transform: translateY(8px); transition: opacity .35s ease, transform .35s ease; }
 .status-card.visible { opacity: 1; transform: translateY(0); }
-.status-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; margin-bottom: 4px; }
+.status-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; margin-bottom: 3px; }
 .status-dot  { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
 .status-count-wrap { text-align: right; }
 .status-count { font-size: 17px; font-weight: 700; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .status-pct   { font-size: 9px; font-weight: 400; color: var(--soft); }
-.status-name  { font-size: 10px; font-weight: 500; color: var(--mid); line-height: 1.35; }
-.status-bar-track { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 7px; }
+.status-name  { font-size: 11.5px; font-weight: 600; color: var(--mid); line-height: 1.2; }
+.status-bar-track { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 6px; }
 .status-bar-fill  { height: 100%; border-radius: 2px; width: 0%; transition: width 1s cubic-bezier(.4,0,.2,1); }
 
 /* ── Health bar ── */
@@ -626,8 +626,11 @@ function runAnimation() {
   /* ── Phase 5: scan starts (4.8s) ── */
   addTimer(function() {
     document.body.style.overflowY = '';
-    var maxScroll = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight) - window.innerHeight;
-    if (maxScroll > 10) { easedScroll(maxScroll, 2800, null); }
+    /* On mobile, don't scroll the page; let the content build top-to-bottom in place */
+    if (window.innerWidth > 760) {
+      var maxScroll = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight) - window.innerHeight;
+      if (maxScroll > 10) { easedScroll(maxScroll, 2800, null); }
+    }
 
     scanBar.classList.add('visible');
 
