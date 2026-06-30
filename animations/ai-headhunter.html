@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Headhunter</title>
+<title>AI Headhunter – 360AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -28,8 +28,7 @@
   }
 
   html, body {
-    height: auto;
-    width: 100%;
+    height: 100%;
   }
 
   body {
@@ -42,6 +41,10 @@
   .scene {
     width: 100%;
     max-width: 100%;
+    height: 100vh;
+    height: 100svh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 4px 4px 20px;
     box-sizing: border-box;
   }
@@ -51,6 +54,9 @@
     background: var(--white);
     padding: 4px 4px 20px;
     animation: cardIn .5s cubic-bezier(.22,1,.36,1) both;
+    position: sticky;
+    top: 0;
+    z-index: 20;
   }
 
   @keyframes cardIn {
@@ -91,7 +97,16 @@
       padding-bottom: 10px;
     }
     /* On mobile, typed-text takes full width, actions drop to next line */
-    .typed-text { max-height: none; overflow: visible; }
+    .search-input-row .typed-text { max-height: none; overflow: visible; }
+    /* When results appear, collapse the (often long) query to 2 lines so the
+       first result card is fully visible */
+    #searchRow.compact-query .typed-text {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      max-height: none;
+    }
     .input-actions {
       width: 100%;
       margin-top: 8px;
@@ -551,8 +566,8 @@
 
   /* Mobile: hide middle stat items, show scanned + top matches + ellipsis */
   @media (max-width: 600px) {
-    .stat-hide-mobile { display: none; }
-    .stat-divider-hide-mobile { display: none; }
+    .stat-item.stat-hide-mobile { display: none; }
+    .stat-divider.stat-divider-hide-mobile { display: none; }
     .stat-more { display: flex !important; }
     .footer-stat { gap: 8px; flex-wrap: nowrap; }
     .time-note { display: none; }
@@ -656,8 +671,9 @@
       <span class="time-note">Done in <strong style="color:var(--ink)">4.8s</strong></span>
     </div>
     </div><!-- /scan-swap-container -->
+  </div><!-- /search-card -->
 
-    <div class="results-grid" id="resultsGrid">
+  <div class="results-grid" id="resultsGrid">
 
       <div class="candidate-card" id="c1">
         <div class="card-top">
@@ -797,7 +813,6 @@
 
     </div>
 
-  </div>
 </div>
 
 <script>
@@ -869,9 +884,12 @@ function loadScenario(index) {
   });
 }
 
-// ── Custom eased scroll ──────────────────────────────────────────
+// ── Custom eased scroll (inside the .scene container, not the page) ──
+function sceneEl() { return document.querySelector('.scene'); }
+
 function easedScroll(el, target, duration, onDone) {
-  var start = getScrollTop();
+  var scene = sceneEl();
+  var start = scene.scrollTop;
   var distance = target - start;
   if (Math.abs(distance) < 2) { if (onDone) onDone(); return; }
   var startTime = null;
@@ -882,42 +900,25 @@ function easedScroll(el, target, duration, onDone) {
     if (!startTime) startTime = timestamp;
     var elapsed = timestamp - startTime;
     var progress = Math.min(elapsed / duration, 1);
-    var pos = start + distance * easeInOutCubic(progress);
-    // Set on both to cover Safari (body) and Chrome/FF (documentElement)
-    document.documentElement.scrollTop = pos;
-    document.body.scrollTop = pos;
+    scene.scrollTop = start + distance * easeInOutCubic(progress);
     if (progress < 1) { requestAnimationFrame(step); }
     else { if (onDone) onDone(); }
   }
   requestAnimationFrame(step);
 }
 
-// Cross-browser scroll helper: Safari scrolls body, Chrome/FF scroll documentElement
-function getScroller() {
-  // Detect which element is actually scrolling
-  var doc = document.documentElement;
-  var body = document.body;
-  return (doc.scrollTop > 0 || body.scrollTop === 0) ? doc : body;
-}
+function getScroller() { return sceneEl(); }
 
-// Cross-browser scroll position getter
-function getScrollTop() {
-  return Math.max(document.documentElement.scrollTop, document.body.scrollTop);
-}
+function getScrollTop() { return sceneEl().scrollTop; }
 
-// Cross-browser scroll target (max scroll position)
 function getMaxScroll() {
-  return Math.max(
-    document.documentElement.scrollHeight,
-    document.body.scrollHeight
-  ) - window.innerHeight;
+  var scene = sceneEl();
+  return scene.scrollHeight - scene.clientHeight;
 }
 
 function typeQuery() {
   var scroller = getScroller();
-  document.body.style.overflowY = 'hidden';
-  document.documentElement.scrollTop = 0;
-  document.body.scrollTop = 0;
+  scroller.scrollTop = 0;
 
   var s = scenarios[scenarioIndex];
   loadScenario(scenarioIndex);
@@ -939,8 +940,8 @@ function typeQuery() {
         }, i * 80);
       });
       setTimeout(function() {
-        document.body.style.overflowY = '';
-        var scrollTarget = getMaxScroll();
+        var isMobile = window.innerWidth <= 600;
+        var scrollTarget = isMobile ? 0 : getMaxScroll();
         easedScroll(scroller, scrollTarget, 2800, null);
         startScan(s);
       }, 500);
@@ -1007,6 +1008,8 @@ function startScan(s) {
 }
 
 function showResults() {
+  var sr = document.getElementById('searchRow');
+  if (sr) sr.classList.add('compact-query');
   document.getElementById('resultsGrid').classList.add('visible');
 
   ['c1','c2','c3','c4'].forEach(function(id, i) {
@@ -1032,6 +1035,7 @@ function resetAndLoop() {
   document.getElementById('scanCount').textContent = '0 profiles analysed';
   document.getElementById('countNum').textContent = '0';
   document.getElementById('searchRow').classList.add('focused');
+  document.getElementById('searchRow').classList.remove('compact-query');
   ['fc1','fc2','fc3','fc4'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.classList.remove('on');
@@ -1046,38 +1050,6 @@ function resetAndLoop() {
 }
 
 setTimeout(typeQuery, 600);
-
-/* ── Auto-height: tell the parent page how tall we actually are ───────────
-   The animation's height changes as the query types, the scan runs and the
-   cards reflow (4-up / 2-up / 1-up). Reporting the real height lets the
-   embedding iframe resize to fit, so nothing is ever clipped at any width. */
-(function () {
-  function reportHeight() {
-    var h = Math.ceil(
-      Math.max(
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight
-      )
-    );
-    if (window.parent !== window) {
-      window.parent.postMessage({ type: 'aiHeroResize', id: 'ai-headhunter', height: h }, '*');
-    }
-  }
-
-  // Report on load, on resize, and whenever the content box changes size.
-  window.addEventListener('load', reportHeight);
-  window.addEventListener('resize', reportHeight);
-  if (window.ResizeObserver) {
-    new ResizeObserver(reportHeight).observe(document.body);
-  }
-  // Safety net covering the full animation sequence (typing + scan + cards).
-  var ticks = 0;
-  var poll = setInterval(function () {
-    reportHeight();
-    if (++ticks > 40) clearInterval(poll); // ~12s at 300ms
-  }, 300);
-  reportHeight();
-})();
 </script>
 </body>
 </html>
