@@ -600,6 +600,14 @@
   }
 
   .time-note { font-size: 10.5px; color: var(--soft); margin-left: auto; white-space: nowrap; }
+
+  /* Mobile only: tighten the gap above the cards, and stop the animation from
+     capturing scroll so the page scrolls normally inside Webflow */
+  @media (max-width: 600px) {
+    .scene { overflow: hidden; touch-action: pan-y; }
+    .search-card { padding-bottom: 2px; }
+    .results-grid { margin-top: 8px; }
+  }
 </style>
 </head>
 <body>
